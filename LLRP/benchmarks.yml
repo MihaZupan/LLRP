@@ -1,0 +1,183 @@
+﻿imports:
+  - https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Wrk/wrk.yml
+  - https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Bombardier/bombardier.yml
+
+variables:
+    path: /plaintext
+    serverScheme: http
+    downstreamScheme: http
+    serverProtocol: http
+    downstreamProtocol: http
+
+jobs:
+  wrk:
+    variables:
+      serverPort: 8080
+
+  bombardier:
+    variables:
+      transport: '{% if serverProtocol == "http2" %}http2{% else %}fasthttp{% endif %}'
+      serverPort: 8080
+
+  downstream:
+    source:
+      repository: https://github.com/aspnet/benchmarks.git
+      branchOrCommit: main
+      project: src/BenchmarksApps/Kestrel/PlatformBenchmarks/PlatformBenchmarks.csproj
+    readyStateText: Application started.
+    arguments: '--urls {{downstreamScheme}}://*:8081 --Kestrel:EndpointDefaults:Protocols http1'
+
+  downstream2:
+    source:
+      repository: https://github.com/aspnet/benchmarks.git
+      branchOrCommit: main
+      project: src/BenchmarksApps/Kestrel/PlatformBenchmarks/PlatformBenchmarks.csproj
+    readyStateText: Application started.
+    arguments: '--urls {{downstreamScheme}}://*:8081 --Kestrel:EndpointDefaults:Protocols http1'
+
+  llrp:
+    source:
+      localFolder: C:/MihaZupan/LLRP
+      project: LLRP/LLRP.csproj
+    readyStateText: Application started.
+    arguments: '--urls {{serverScheme}}://*:8080 --downstream {{downstreamScheme}}://{{downstreamAddress}}:8081{% if two-downstreams == "yes" %};{{downstreamScheme}}://{{downstreamAddress2}}:8081{% endif %}'
+
+  yarp:
+    source:
+      repository: https://github.com/microsoft/reverse-proxy.git
+      branchOrCommit: main
+      project: testassets/BenchmarkApp/BenchmarkApp.csproj
+    readyStateText: Application started.
+    arguments: '--urls {{serverScheme}}://*:8080 --clusterUrls {{downstreamScheme}}://{{downstreamAddress}}:8081'
+
+scenarios:
+  proxy-llrp:
+    downstream:
+      job: downstream
+    application:
+      job: llrp
+    load:
+      job: bombardier
+
+  proxy-llrp-2down:
+    downstream:
+      job: downstream
+    downstream2:
+      job: downstream2
+    application:
+      job: llrp
+      variables:
+        two-downstreams: yes
+    load:
+      job: bombardier
+    
+
+  proxy-yarp:
+    downstream:
+      job: downstream
+    application:
+      job: yarp
+    load:
+      job: bombardier
+
+profiles:
+  aspnet-perf-lin:
+    variables:
+      serverAddress: 10.0.0.102
+      downstreamAddress: 10.0.0.103
+      cores: 12
+    jobs:
+      downstream:
+        endpoints: 
+          - http://asp-perf-db:5001
+      application:
+        endpoints: 
+          - http://asp-perf-lin:5001
+      load:
+        endpoints: 
+          - http://asp-perf-load:5001
+        options:
+          displayOutput: true
+
+  aspnet-perf-win:
+    variables:
+      serverAddress: 10.0.0.110
+      downstreamAddress: 10.0.0.104
+      cores: 12
+    jobs:
+      downstream:
+        endpoints: 
+          - http://asp-perf-load:5001
+      application:
+        endpoints: 
+          - http://asp-perf-win:5001
+      load:
+        endpoints: 
+          - http://asp-perf-db:5001
+
+  aspnet-citrine-lin:
+    variables:
+      serverAddress: 10.0.0.102
+      downstreamAddress: 10.0.0.103
+      cores: 28
+    jobs: 
+      downstream:
+        endpoints: 
+          - http://asp-citrine-db:5001
+      application:
+        endpoints: 
+          - http://asp-citrine-lin:5001
+      load:
+        endpoints: 
+          - http://asp-citrine-load:5001
+
+  aspnet-citrine-win:
+    variables:
+      serverAddress: 10.0.0.104
+      downstreamAddress: 10.0.0.105
+      cores: 28
+    jobs:
+      downstream:
+        endpoints: 
+          - http://asp-citrine-load:5001
+      application:
+        endpoints: 
+          - http://asp-citrine-win:5001
+      load:
+        endpoints: 
+          - http://asp-citrine-db:5001
+
+  aspnet-citrine-amd:
+    variables:
+      serverAddress: 10.0.0.106
+      downstreamAddress: 10.0.0.102
+      downstreamAddress2: 10.0.0.104
+      cores: 48
+    jobs:
+      downstream:
+        endpoints: 
+          - http://asp-citrine-lin:5001
+      downstream2:
+        endpoints: 
+          - http://asp-citrine-win:5001
+      application:
+        endpoints: 
+          - http://asp-citrine-amd:5001
+      load:
+        endpoints: 
+          - http://asp-citrine-load:5001
+
+  local:
+    variables:
+      serverAddress: localhost
+      downstreamAddress: localhost
+    jobs: 
+      downstream:
+        endpoints: 
+          - http://localhost:5010
+      application:
+        endpoints: 
+          - http://localhost:5010
+      load:
+        endpoints: 
+          - http://localhost:5010
