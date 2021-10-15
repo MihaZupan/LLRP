@@ -4,7 +4,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -161,14 +160,6 @@ namespace System
             ArrayPool<byte>.Shared.Return(oldBytes);
 
             Debug.Assert(byteCount <= AvailableLength);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Write(ReadOnlySpan<byte> buffer)
-        {
-            EnsureAvailableSpace(buffer.Length);
-            buffer.CopyTo(AvailableSpan);
-            Commit(buffer.Length);
         }
     }
 }

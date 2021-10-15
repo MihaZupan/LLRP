@@ -398,22 +398,6 @@ namespace System.Net.Http.LowLevel
             Debug.Assert(length == GetEncodeConnectRequestLength(authority));
         }
 
-        internal void WriteRequestStart(ReadOnlySpan<byte> startLine)
-        {
-            if (_writeState != WriteState.Unstarted)
-            {
-                throw new InvalidOperationException();
-            }
-
-            if (startLine.Length == 0)
-            {
-                throw new ArgumentException("All parameters must be specified.");
-            }
-
-            _writeBuffer.Write(startLine);
-            _writeState = WriteState.RequestWritten;
-        }
-
         internal void WriteRequestStart(ReadOnlySpan<byte> method, ReadOnlySpan<byte> authority, ReadOnlySpan<byte> pathAndQuery)
         {
             if (_writeState != WriteState.Unstarted)

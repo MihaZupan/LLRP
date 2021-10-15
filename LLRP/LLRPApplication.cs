@@ -25,7 +25,7 @@ namespace LLRP
 
     public sealed partial class LLRPApplication : IHttpHeadersSink
     {
-        public static DownstreamAddress[] DownstreamAddresses = { new DownstreamAddress(new Uri("http://httpbin.org/anything/A")) };
+        public static DownstreamAddress[] DownstreamAddresses = null!;
         private static int _connectionCounter;
         private readonly int _connectionCount;
 
@@ -68,7 +68,9 @@ namespace LLRP
         private ValueHttpRequest _request;
         private bool _isChunkedResponse;
 
+#nullable disable
         public LLRPApplication()
+#nullable enable
         {
             _responseContentBufferMemory = _responseContentBuffer.AsMemory();
             _chunkedResponseContentBuffer = _responseContentBufferMemory.Slice(0, ResponseContentBufferLength - ChunkedEncodingMaxOverhead);

@@ -73,14 +73,6 @@ namespace LLRP.Helpers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WritePacked(ushort packed)
-        {
-            Ensure(2);
-            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(_span), packed);
-            Advance(2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Ensure()
         {
             if (_span.Length != 0)

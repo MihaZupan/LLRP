@@ -120,8 +120,6 @@ namespace System.Net.Http.LowLevel
         /// <param name="pathAndQuery">The path and query of the request.</param>
         protected internal abstract void WriteRequestStart(int version, ReadOnlySpan<byte> method, ReadOnlySpan<byte> authority, ReadOnlySpan<byte> pathAndQuery);
 
-        protected internal abstract void WriteRequestStart(int version, ReadOnlySpan<byte> startLine);
-
         /// <summary>
         /// Writes a header.
         /// </summary>

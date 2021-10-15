@@ -61,9 +61,6 @@ namespace System.Net.Http.LowLevel
         public void WriteConnectRequest(ReadOnlySpan<byte> authority) =>
             _request.WriteConnectRequest(_requestVersion, authority);
 
-        public void WriteRequestStart(ReadOnlySpan<byte> startLine) =>
-            _request.WriteRequestStart(_requestVersion, startLine);
-
         /// <summary>
         /// Writes a request.
         /// </summary>

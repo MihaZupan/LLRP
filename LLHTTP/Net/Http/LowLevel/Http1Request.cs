@@ -98,13 +98,6 @@ namespace System.Net.Http.LowLevel
             _connection.WriteConnectRequest(authority);
         }
 
-        protected internal override void WriteRequestStart(int version, ReadOnlySpan<byte> startLine)
-        {
-            ThrowIfDisposed(version);
-            Debug.Assert(!Encoding.UTF8.GetString(startLine).Contains("Head", StringComparison.OrdinalIgnoreCase));
-            _connection.WriteRequestStart(startLine);
-        }
-
         protected internal override void WriteRequestStart(int version, ReadOnlySpan<byte> method, ReadOnlySpan<byte> authority, ReadOnlySpan<byte> pathAndQuery)
         {
             ThrowIfDisposed(version);
