@@ -9,15 +9,15 @@ namespace LLRP
 {
     public sealed class DownstreamAddress
     {
-        public readonly AsciiString Authority;
-        public readonly AsciiString PathPrefix;
+        public readonly byte[] Authority;
+        public readonly byte[] PathPrefix;
         public readonly bool NoPathPrefix;
         public readonly DnsEndPoint EndPoint;
 
         public DownstreamAddress(Uri uri)
         {
-            Authority = uri.Authority;
-            PathPrefix = uri.AbsolutePath;
+            Authority = Encoding.UTF8.GetBytes(uri.Authority);
+            PathPrefix = Encoding.UTF8.GetBytes(uri.AbsolutePath);
             NoPathPrefix = uri.AbsolutePath.AsSpan().TrimStart('/').Length == 0;
             EndPoint = new DnsEndPoint(uri.Host, uri.Port);
         }
@@ -29,10 +29,10 @@ namespace LLRP
         private static int _connectionCounter;
         private readonly int _connectionCount;
 
-        private static readonly AsciiString _crlf = "\r\n";
-        private static readonly AsciiString _http11Space = "HTTP/1.1 ";
-        private static readonly AsciiString _chunkedEncodingFinalChunk = "0" + _crlf + _crlf;
-
+        private static ReadOnlySpan<byte> Http11Space => new byte[]
+        {
+            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1',  (byte)' '
+        };
         private static ReadOnlySpan<byte> Http11OK => new byte[]
         {
             (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1',  (byte)' ',
@@ -42,9 +42,16 @@ namespace LLRP
         {
             (byte)'0', (byte)'\r', (byte)'n', (byte)'\r', (byte)'\n'
         };
-
-        private static ReadOnlySpan<byte> EncodedTransferEncodingName => new byte[] { (byte)'t', (byte)'r', (byte)'a', (byte)'n', (byte)'s', (byte)'f', (byte)'e', (byte)'r', (byte)'-', (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g' };
-        private static ReadOnlySpan<byte> EncodedTransferEncodingChunkedValue => new byte[] { (byte)'c', (byte)'h', (byte)'u', (byte)'n', (byte)'k', (byte)'e', (byte)'d' };
+        private static ReadOnlySpan<byte> EncodedTransferEncodingName => new byte[]
+        {
+            (byte)'t', (byte)'r', (byte)'a', (byte)'n', (byte)'s', (byte)'f', (byte)'e', (byte)'r',
+            (byte)'-',
+            (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g'
+        };
+        private static ReadOnlySpan<byte> EncodedTransferEncodingChunkedValue => new byte[]
+        {
+            (byte)'c', (byte)'h', (byte)'u', (byte)'n', (byte)'k', (byte)'e', (byte)'d'
+        };
 
         private const int CRLF = 2;
         private const int ChunkedEncodingMaxChunkLengthDigits = 4; // Valid as long as ResponseContentBufferLength <= 65536
@@ -57,7 +64,7 @@ namespace LLRP
         private readonly Memory<byte> _responseContentBufferMemory;
         private readonly Memory<byte> _chunkedResponseContentBuffer;
 
-        private readonly AsciiString _authority;
+        private readonly byte[] _authority;
 
         private readonly bool _noPathPrefix;
         private readonly int _pathAndQueryOffset;
@@ -146,8 +153,7 @@ namespace LLRP
                 pBuf = ref Unsafe.AddByteOffset(ref pBuf, (nuint)value.Length);
             }
 
-            if (BitConverter.IsLittleEndian) Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0A0D);
-            else Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0D0Au);
+            BufferExtensions.WriteCRLF(ref pBuf);
         }
 
         private static bool EqualsIgnoreCase(ReadOnlySpan<byte> wireValue, ReadOnlySpan<byte> expectedValueLowerCase)
@@ -184,7 +190,8 @@ namespace LLRP
 
             await _request.ReadToContentAsync();
 
-            WriteToWriter(_crlf);
+            BufferExtensions.WriteCRLF(ref MemoryMarshal.GetReference(Writer.GetSpan(2)));
+            Writer.Advance(2);
 
             if (_isChunkedResponse)
             {
@@ -227,7 +234,7 @@ namespace LLRP
 
                 if (read == 0)
                 {
-                    writer.UnsafeWriteNoLengthCheck(_chunkedEncodingFinalChunk);
+                    writer.UnsafeWriteNoLengthCheck(ChunkedEncodingFinalChunk);
                 }
 
                 writer.Commit();
@@ -339,11 +346,11 @@ namespace LLRP
             {
                 HttpStatusCode statusCode = app._request.StatusCode;
                 var writer = GetWriter(app.Writer, sizeHint: 64);
-                writer.Write(_http11Space);
+                writer.Write(Http11Space);
                 writer.WriteNumeric((uint)statusCode);
                 writer.Write((byte)' ');
                 writer.WriteAsciiString(ReasonPhrases.GetReasonPhrase((int)statusCode));
-                writer.Write(_crlf);
+                writer.WriteCRLF();
                 writer.Commit();
             }
         }

@@ -63,5 +63,18 @@ namespace LLRP.Helpers
             _numericBytesScratch = bytes;
             return bytes;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteCRLF(ref byte pBuf)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0A0D);
+            }
+            else
+            {
+                Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0D0A);
+            }
+        }
     }
 }

@@ -129,6 +129,14 @@ namespace LLRP.Helpers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteCRLF()
+        {
+            Ensure(2);
+            BufferExtensions.WriteCRLF(ref MemoryMarshal.GetReference(_span));
+            Advance(2);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteNumeric(uint number)
         {
             const byte AsciiDigitStart = (byte)'0';
@@ -190,15 +198,13 @@ namespace LLRP.Helpers
 
             ref byte pBuf = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(span), (nuint)bytesWritten);
 
-            if (BitConverter.IsLittleEndian) Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0A0D);
-            else Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0D0Au);
+            BufferExtensions.WriteCRLF(ref pBuf);
             pBuf = ref Unsafe.AddByteOffset(ref pBuf, 2);
 
             Unsafe.CopyBlockUnaligned(ref pBuf, ref MemoryMarshal.GetReference(chunk), (uint)chunk.Length);
             pBuf = ref Unsafe.AddByteOffset(ref pBuf, (nuint)chunk.Length);
 
-            if (BitConverter.IsLittleEndian) Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0A0D);
-            else Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0D0Au);
+            BufferExtensions.WriteCRLF(ref pBuf);
 
             Advance(chunk.Length + bytesWritten + 4);
         }
