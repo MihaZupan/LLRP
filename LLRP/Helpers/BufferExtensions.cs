@@ -29,6 +29,7 @@ namespace LLRP.Helpers
         {
             buffer.Ensure(text.Length);
             int byteCount = Encoding.UTF8.GetBytes(text.AsSpan(), buffer.Span);
+            Debug.Assert(byteCount == text.Length);
             buffer.Advance(byteCount);
         }
 

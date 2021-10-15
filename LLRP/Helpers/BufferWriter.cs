@@ -36,8 +36,9 @@ namespace LLRP.Helpers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Advance(int count)
         {
+            Debug.Assert(count >= 0 && count <= _span.Length);
             _buffered += count;
-            _span = _span.Slice(count);
+            _span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref MemoryMarshal.GetReference(_span), count), _span.Length - count);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

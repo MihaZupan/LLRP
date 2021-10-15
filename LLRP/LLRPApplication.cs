@@ -47,7 +47,7 @@ namespace LLRP
         private static ReadOnlySpan<byte> EncodedTransferEncodingChunkedValue => new byte[] { (byte)'c', (byte)'h', (byte)'u', (byte)'n', (byte)'k', (byte)'e', (byte)'d' };
 
         private const int CRLF = 2;
-        private const int ChunkedEncodingMaxChunkLengthDigits = 4;
+        private const int ChunkedEncodingMaxChunkLengthDigits = 4; // Valid as long as ResponseContentBufferLength <= 65536
         private const int ChunkedEncodingMaxChunkOverhead = ChunkedEncodingMaxChunkLengthDigits + CRLF + CRLF;
         private const int ChunkedEncodingFinalChunkLength = 1 + CRLF + CRLF;
         private const int ChunkedEncodingMaxOverhead = ChunkedEncodingMaxChunkOverhead + ChunkedEncodingFinalChunkLength;
@@ -340,7 +340,7 @@ namespace LLRP
                 writer.Write(_http11Space);
                 writer.WriteNumeric((uint)statusCode);
                 writer.Write((byte)' ');
-                writer.WriteUtf8String(ReasonPhrases.GetReasonPhrase((int)statusCode));
+                writer.WriteAsciiString(ReasonPhrases.GetReasonPhrase((int)statusCode));
                 writer.Write(_crlf);
                 writer.Commit();
             }
