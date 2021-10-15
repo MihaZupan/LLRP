@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 using Microsoft.Extensions.Configuration;
 using PlatformBenchmarks;
 using System.IO.Pipelines;
+using System.Linq;
 
 var config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
@@ -135,10 +136,11 @@ namespace PlatformBenchmarks
             return new IPEndPoint(ip, address.Port);
         }
 
-        public static string[] GetDownstreamAddresses(this IConfiguration config)
+        public static DownstreamAddress[] GetDownstreamAddresses(this IConfiguration config)
         {
-            string list = config["downstream"] ?? "https://httpbin.org/anything/A";
-            return list.Split(';');
+            //string list = config["downstream"] ?? "http://httpbin.org/anything/A";
+            string list = config["downstream"] ?? "http://localhost:8081";
+            return list.Split(';').Select(u => new DownstreamAddress(new Uri(u, UriKind.Absolute))).ToArray();
         }
     }
 

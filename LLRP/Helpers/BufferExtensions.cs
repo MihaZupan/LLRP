@@ -54,21 +54,6 @@ namespace LLRP.Helpers
             buffer.Write(new ReadOnlySpan<byte>(byteBuffer, position, length));
         }
 
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void WriteHexNumberMultiWrite<T>(ref this BufferWriter<T> buffer, uint number)
-             where T : IBufferWriter<byte>
-        {
-            Span<byte> byteBuffer = NumericBytesScratch;
-
-            if (!Utf8Formatter.TryFormat(number, byteBuffer, out int bytesWritten, 'X'))
-            {
-                Debug.Fail("Failed to encode hex");
-            }
-
-            buffer.Write(byteBuffer.Slice(0, bytesWritten));
-        }
-
         private static byte[] NumericBytesScratch => _numericBytesScratch ?? CreateNumericBytesScratch();
 
         [MethodImpl(MethodImplOptions.NoInlining)]

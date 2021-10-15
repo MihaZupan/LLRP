@@ -1,6 +1,6 @@
 ﻿namespace LLRP.Helpers
 {
-    internal readonly struct AsciiString : IEquatable<AsciiString>
+    public readonly struct AsciiString : IEquatable<AsciiString>
     {
         private readonly byte[] _data;
 

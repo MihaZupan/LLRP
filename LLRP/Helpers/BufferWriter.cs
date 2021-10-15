@@ -43,9 +43,11 @@ namespace LLRP.Helpers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write(ReadOnlySpan<byte> source)
         {
-            if (_span.Length >= source.Length)
+            Span<byte> span = _span;
+
+            if (span.Length >= source.Length)
             {
-                source.CopyTo(_span);
+                Unsafe.CopyBlockUnaligned(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(source), (uint)source.Length);
                 Advance(source.Length);
             }
             else
@@ -55,7 +57,39 @@ namespace LLRP.Helpers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Ensure(int count = 1)
+        public void UnsafeWriteNoLengthCheck(ReadOnlySpan<byte> source)
+        {
+            Unsafe.CopyBlockUnaligned(ref MemoryMarshal.GetReference(_span), ref MemoryMarshal.GetReference(source), (uint)source.Length);
+            Advance(source.Length);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Write(byte b)
+        {
+            Ensure();
+            MemoryMarshal.GetReference(_span) = b;
+            Advance(1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WritePacked(ushort packed)
+        {
+            Ensure(2);
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(_span), packed);
+            Advance(2);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Ensure()
+        {
+            if (_span.Length != 0)
+            {
+                EnsureMore();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Ensure(int count)
         {
             if (_span.Length < count)
             {
@@ -64,7 +98,18 @@ namespace LLRP.Helpers
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void EnsureMore(int count = 0)
+        private void EnsureMore()
+        {
+            if (_buffered > 0)
+            {
+                Commit();
+            }
+
+            _span = _output.GetSpan();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void EnsureMore(int count)
         {
             if (_buffered > 0)
             {
@@ -137,18 +182,32 @@ namespace LLRP.Helpers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteHexNumber(uint number)
+        public void WriteChunkedEncodingChunk(ReadOnlySpan<byte> chunk)
         {
-            Span<byte> span = Span;
+            Debug.Assert(chunk.Length <= 65535);
 
-            if (Utf8Formatter.TryFormat(number, span, out int bytesWritten, 'X'))
+            Ensure(chunk.Length + 4 + 4);
+
+            Span<byte> span = _span;
+
+            if (!Utf8Formatter.TryFormat(chunk.Length, span, out int bytesWritten, 'X'))
             {
-                Advance(bytesWritten);
+                Debug.Fail("Failed to encode hex");
             }
-            else
-            {
-                BufferExtensions.WriteHexNumberMultiWrite(ref this, number);
-            }
+
+            ref byte pBuf = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(span), (nuint)bytesWritten);
+
+            if (BitConverter.IsLittleEndian) Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0A0D);
+            else Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0D0Au);
+            pBuf = ref Unsafe.AddByteOffset(ref pBuf, 2);
+
+            Unsafe.CopyBlockUnaligned(ref pBuf, ref MemoryMarshal.GetReference(chunk), (uint)chunk.Length);
+            pBuf = ref Unsafe.AddByteOffset(ref pBuf, (nuint)chunk.Length);
+
+            if (BitConverter.IsLittleEndian) Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0A0D);
+            else Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0D0Au);
+
+            Advance(chunk.Length + bytesWritten + 4);
         }
     }
 }

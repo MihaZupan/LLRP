@@ -19,6 +19,8 @@ namespace LLRP
         {
             try
             {
+                await InitializeAsync();
+
                 await ProcessRequestsAsync();
 
                 Reader.Complete();

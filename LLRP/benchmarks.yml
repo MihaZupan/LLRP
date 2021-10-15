@@ -1,9 +1,10 @@
 ﻿imports:
-  - https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Wrk/wrk.yml
+  #- https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Wrk/wrk.yml
   - https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Bombardier/bombardier.yml
 
 variables:
     path: /plaintext
+    presetHeaders: plaintext
     serverScheme: http
     downstreamScheme: http
     serverProtocol: http
@@ -17,6 +18,7 @@ jobs:
   bombardier:
     variables:
       transport: '{% if serverProtocol == "http2" %}http2{% else %}fasthttp{% endif %}'
+      path: /plaintext
       serverPort: 8080
 
   downstream:
@@ -163,6 +165,22 @@ profiles:
       application:
         endpoints: 
           - http://asp-citrine-amd:5001
+      load:
+        endpoints: 
+          - http://asp-citrine-load:5001
+
+  aspnet-citrine-amd-dest:
+    variables:
+      serverAddress: 10.0.0.102
+      downstreamAddress: 10.0.0.106
+      cores: 28
+    jobs:
+      downstream:
+        endpoints: 
+          - http://asp-citrine-amd:5001
+      application:
+        endpoints: 
+          - http://asp-citrine-lin:5001
       load:
         endpoints: 
           - http://asp-citrine-load:5001
