@@ -183,13 +183,12 @@ namespace LLRP.Helpers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteChunkedEncodingChunk(ReadOnlySpan<byte> chunk)
+        public void WriteChunkedEncodingChunkNoLengthCheck(ReadOnlySpan<byte> chunk)
         {
-            Debug.Assert(chunk.Length <= 65535);
-
-            Ensure(chunk.Length + 4 + 4);
-
             Span<byte> span = _span;
+
+            Debug.Assert(chunk.Length <= 65535);
+            Debug.Assert(chunk.Length + 4 + 4 < span.Length);
 
             if (!Utf8Formatter.TryFormat(chunk.Length, span, out int bytesWritten, 'X'))
             {
