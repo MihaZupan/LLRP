@@ -2,4 +2,3 @@ bin
 obj
 .vs
 *trace.zip
-*.json

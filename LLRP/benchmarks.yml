@@ -52,6 +52,18 @@ jobs:
     readyStateText: Application started.
     arguments: '--urls {{serverScheme}}://*:8080 --clusterUrls {{downstreamScheme}}://{{downstreamAddress}}:8081'
 
+  haproxy:
+    source:
+      localFolder: C:/MihaZupan/LLRP/LLRP/haproxy
+      BranchOrCommit: main
+      DockerFile: haproxy.dockerfile
+      DockerImageName: haproxy-reverseproxy
+      DockerContextDirectory: haproxy
+    environmentVariables:
+        DOWNSTREAM_ADDRESS: '{{downstreamAddress}}'
+        DOWNSTREAM_PORT: '8081'
+    port: 8080
+
 scenarios:
   proxy-llrp:
     downstream:
@@ -72,13 +84,20 @@ scenarios:
         two-downstreams: yes
     load:
       job: bombardier
-    
 
   proxy-yarp:
     downstream:
       job: downstream
     application:
       job: yarp
+    load:
+      job: bombardier
+
+  haproxy:
+    downstream:
+      job: downstream
+    application:
+      job: haproxy
     load:
       job: bombardier
 
