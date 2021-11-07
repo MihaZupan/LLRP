@@ -14,3 +14,10 @@ Microsoft Hackaton 2021 project
 | **Requests/sec**    | **244.405** | **390.393** | **+59,73%** | **522.619** | **+113,83%** |
 | Requests/sec (max)  |   267.091 |    443.037 | +65,87% |   601.288 | +125,12% |
 
+```
+crank --config benchmarks.yml --profile aspnet-perf-lin --scenario yarp       --json YARP.json
+crank --config benchmarks.yml --profile aspnet-perf-lin --scenario httpclient --json HttpClient.json
+crank --config benchmarks.yml --profile aspnet-perf-lin --scenario llrp       --json LLRP.json
+
+crank compare YARP.json HttpClient.json LLRP.json
+```

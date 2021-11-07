@@ -3,3 +3,4 @@ obj
 .vs
 *trace.zip
 BenchmarkResults
+run.bat

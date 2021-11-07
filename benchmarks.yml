@@ -1,5 +1,4 @@
 ﻿imports:
-  #- https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Wrk/wrk.yml
   - https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Bombardier/bombardier.yml
 
 variables:
@@ -46,7 +45,7 @@ jobs:
 
   haproxy:
     source:
-      localFolder: C:/MihaZupan/LLRP/LLRP/haproxy
+      localFolder: C:/MihaZupan/LLRP/haproxy
       BranchOrCommit: main
       DockerFile: haproxy.dockerfile
       DockerImageName: haproxy-reverseproxy
