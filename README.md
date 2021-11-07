@@ -15,6 +15,9 @@ Microsoft Hackaton 2021 project
 | Requests/sec (max)  |   267.091 |    443.037 | +65,87% |   601.288 | +125,12% |
 
 ```
+dotnet tool update Microsoft.Crank.Controller -g --version "0.2.0-*"
+
+# These require corpnet access for aspnet-perf-lin
 crank --config benchmarks.yml --profile aspnet-perf-lin --scenario yarp       --json YARP.json
 crank --config benchmarks.yml --profile aspnet-perf-lin --scenario httpclient --json HttpClient.json
 crank --config benchmarks.yml --profile aspnet-perf-lin --scenario llrp       --json LLRP.json
