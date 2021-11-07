@@ -29,20 +29,12 @@ jobs:
     readyStateText: Application started.
     arguments: '--urls {{downstreamScheme}}://*:8081 --Kestrel:EndpointDefaults:Protocols http1'
 
-  downstream2:
-    source:
-      repository: https://github.com/aspnet/benchmarks.git
-      branchOrCommit: main
-      project: src/BenchmarksApps/Kestrel/PlatformBenchmarks/PlatformBenchmarks.csproj
-    readyStateText: Application started.
-    arguments: '--urls {{downstreamScheme}}://*:8081 --Kestrel:EndpointDefaults:Protocols http1'
-
   llrp:
     source:
       localFolder: C:/MihaZupan/LLRP
       project: LLRP/LLRP.csproj
     readyStateText: Application started.
-    arguments: '--urls {{serverScheme}}://*:8080 --downstream {{downstreamScheme}}://{{downstreamAddress}}:8081{% if two-downstreams == "yes" %};{{downstreamScheme}}://{{downstreamAddress2}}:8081{% endif %}'
+    arguments: '--urls {{serverScheme}}://*:8080 --downstream {{downstreamScheme}}://{{downstreamAddress}}:8081 --httpclient {{httpclient}}'
 
   yarp:
     source:
@@ -73,17 +65,15 @@ scenarios:
     load:
       job: bombardier
 
-  proxy-llrp-2down:
+  proxy-httpclient:
     downstream:
       job: downstream
-    downstream2:
-      job: downstream2
     application:
       job: llrp
-      variables:
-        two-downstreams: yes
     load:
       job: bombardier
+    variables:
+      httpclient: true
 
   proxy-yarp:
     downstream:
@@ -172,15 +162,11 @@ profiles:
     variables:
       serverAddress: 10.0.0.106
       downstreamAddress: 10.0.0.102
-      downstreamAddress2: 10.0.0.104
       cores: 48
     jobs:
       downstream:
         endpoints: 
           - http://asp-citrine-lin:5001
-      downstream2:
-        endpoints: 
-          - http://asp-citrine-win:5001
       application:
         endpoints: 
           - http://asp-citrine-amd:5001
