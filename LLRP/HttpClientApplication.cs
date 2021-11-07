@@ -52,8 +52,7 @@ namespace LLRP
         private readonly Memory<byte> _chunkedResponseContentBuffer;
 
         private readonly DownstreamAddress _downstream;
-        private readonly string _downstreamBase;
-        private readonly int _downstreamSlashSkipOffset;
+        private readonly ConnectionUriBuilder _uriBuilder;
         private HttpRequestMessage? _request;
         private HttpHeaders? _requestHeaders;
 
@@ -62,8 +61,7 @@ namespace LLRP
             _responseContentBufferMemory = _responseContentBuffer;
             _chunkedResponseContentBuffer = _responseContentBuffer.AsMemory(0, ResponseContentBufferLength - ChunkedEncodingMaxOverhead);
             _downstream = DownstreamAddress.GetNextAddress();
-            _downstreamBase = _downstream.Uri.AbsoluteUri;
-            _downstreamSlashSkipOffset = _downstreamBase.EndsWith('/') ? 1 : 0;
+            _uriBuilder = new ConnectionUriBuilder(_downstream.Uri);
         }
 
         public override Task InitializeAsync() => Task.CompletedTask;
@@ -274,24 +272,10 @@ namespace LLRP
                 HttpMethodHelper.TryConvertMethod(versionAndMethod.Method) ??
                 HttpMethodHelper.GetMethod(startLine.Slice(0, versionAndMethod.MethodEnd));
 
-            string uriString = GetUriString(startLine.Slice(targetPath.Offset));
-            var uri = new Uri(uriString, UriKind.Absolute);
+            Uri uri = _uriBuilder.CreateUri(startLine.Slice(targetPath.Offset));
 
             _request = new HttpRequestMessage(method, uri);
             _requestHeaders = _request.Headers;
-        }
-
-        private string GetUriString(ReadOnlySpan<byte> pathAndQuery)
-        {
-            Debug.Assert(pathAndQuery.Length > 0 && pathAndQuery[0] == '/');
-
-            Span<char> pathAndQueryBuffer = pathAndQuery.Length < 256
-                ? stackalloc char[256]
-                : new char[pathAndQuery.Length];
-
-            int charCount = _utf8.GetChars(pathAndQuery, pathAndQueryBuffer);
-
-            return string.Concat(_downstreamBase, pathAndQueryBuffer.Slice(_downstreamSlashSkipOffset, charCount));
         }
 
         public override void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
