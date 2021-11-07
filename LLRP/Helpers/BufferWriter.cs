@@ -137,6 +137,13 @@ namespace LLRP.Helpers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void UnsafeWriteCRLFNoLengthCheck()
+        {
+            BufferExtensions.WriteCRLF(ref MemoryMarshal.GetReference(_span));
+            Advance(2);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteNumeric(uint number)
         {
             const byte AsciiDigitStart = (byte)'0';

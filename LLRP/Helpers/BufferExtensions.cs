@@ -13,9 +13,8 @@ namespace LLRP.Helpers
         public static void WriteUtf8String<T>(ref this BufferWriter<T> buffer, string text)
              where T : struct, IBufferWriter<byte>
         {
-            var byteCount = Encoding.UTF8.GetByteCount(text);
-            buffer.Ensure(byteCount);
-            byteCount = Encoding.UTF8.GetBytes(text.AsSpan(), buffer.Span);
+            buffer.Ensure(text.Length * 3);
+            int byteCount = Encoding.UTF8.GetBytes(text.AsSpan(), buffer.Span);
             buffer.Advance(byteCount);
         }
 

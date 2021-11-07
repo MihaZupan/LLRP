@@ -18,21 +18,37 @@ namespace LLRP
         });
         private static readonly Encoding _utf8 = Encoding.UTF8;
 
-        private static readonly AsciiString _space = " ";
-        private static readonly AsciiString _colonSpace = ": ";
-        private static readonly AsciiString _crlf = "\r\n";
-        private static readonly AsciiString _http11Space = "HTTP/1.1 ";
-        private static readonly AsciiString _http11OK = _http11Space + "200 OK" + _crlf;
-        private static readonly AsciiString _chunkedEncodingFinalChunk = "0" + _crlf + _crlf;
+        private static ReadOnlySpan<byte> Space => new byte[]
+        {
+            (byte)' '
+        };
+        private static ReadOnlySpan<byte> ColonSpace => new byte[]
+        {
+            (byte)':', (byte)' '
+        };
+        private static ReadOnlySpan<byte> Http11Space => new byte[]
+        {
+            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1',  (byte)' '
+        };
+        private static ReadOnlySpan<byte> Http11OK => new byte[]
+        {
+            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1',  (byte)' ',
+            (byte)'2', (byte)'0', (byte)'0', (byte)' ', (byte)'O', (byte)'K', (byte)'\r', (byte)'\n'
+        };
+        private static ReadOnlySpan<byte> ChunkedEncodingFinalChunk => new byte[]
+        {
+            (byte)'0', (byte)'\r', (byte)'n', (byte)'\r', (byte)'\n'
+        };
 
         private const int CRLF = 2;
-        private const int ChunkedEncodingMaxChunkLengthDigits = 4;
-        private const int ChunkedEncodingFinalChunkLength = 1 + CRLF + CRLF;
+        private const int ChunkedEncodingMaxChunkLengthDigits = 4; // Valid as long as ResponseContentBufferLength <= 65536
         private const int ChunkedEncodingMaxChunkOverhead = ChunkedEncodingMaxChunkLengthDigits + CRLF + CRLF;
+        private const int ChunkedEncodingFinalChunkLength = 1 + CRLF + CRLF;
         private const int ChunkedEncodingMaxOverhead = ChunkedEncodingMaxChunkOverhead + ChunkedEncodingFinalChunkLength;
 
         private const int ResponseContentBufferLength = 4096;
         private readonly byte[] _responseContentBuffer = new byte[ResponseContentBufferLength];
+        private readonly Memory<byte> _responseContentBufferMemory;
         private readonly Memory<byte> _chunkedResponseContentBuffer;
 
         private readonly DownstreamAddress _downstream;
@@ -43,6 +59,7 @@ namespace LLRP
 
         public HttpClientApplication()
         {
+            _responseContentBufferMemory = _responseContentBuffer;
             _chunkedResponseContentBuffer = _responseContentBuffer.AsMemory(0, ResponseContentBufferLength - ChunkedEncodingMaxOverhead);
             _downstream = DownstreamAddress.GetNextAddress();
             _downstreamBase = _downstream.Uri.AbsoluteUri;
@@ -50,6 +67,14 @@ namespace LLRP
         }
 
         public override Task InitializeAsync() => Task.CompletedTask;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void WriteToWriter(ReadOnlySpan<byte> buffer)
+        {
+            Span<byte> destination = Writer.GetSpan(buffer.Length);
+            Unsafe.CopyBlockUnaligned(ref MemoryMarshal.GetReference(destination), ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
+            Writer.Advance(buffer.Length);
+        }
 
         public override async Task ProcessRequestAsync()
         {
@@ -72,9 +97,7 @@ namespace LLRP
 
         private Task CopyChunkedResponseContent(Stream content)
         {
-            Memory<byte> buffer = _chunkedResponseContentBuffer;
-
-            ValueTask<int> readTask = content.ReadAsync(buffer);
+            ValueTask<int> readTask = content.ReadAsync(_chunkedResponseContentBuffer);
 
             if (readTask.IsCompletedSuccessfully)
             {
@@ -84,12 +107,9 @@ namespace LLRP
 
                 if (read != 0)
                 {
-                    writer.WriteHexNumber((uint)read);
-                    writer.Write(_crlf);
-                    writer.Write(buffer.Span.Slice(0, read));
-                    writer.Write(_crlf);
+                    writer.WriteChunkedEncodingChunkNoLengthCheck(_responseContentBuffer.AsSpan(0, read));
 
-                    readTask = content.ReadAsync(buffer);
+                    readTask = content.ReadAsync(_chunkedResponseContentBuffer);
 
                     if (readTask.IsCompletedSuccessfully)
                     {
@@ -104,7 +124,7 @@ namespace LLRP
 
                 if (read == 0)
                 {
-                    writer.Write(_chunkedEncodingFinalChunk);
+                    writer.UnsafeWriteNoLengthCheck(ChunkedEncodingFinalChunk);
                 }
 
                 writer.Commit();
@@ -115,78 +135,76 @@ namespace LLRP
                 }
             }
 
-            return WaitAndCopyAsync(Writer, content, buffer, readTask);
+            return WaitAndCopyAsync(this, content, readTask);
 
-            static async Task WaitAndCopyAsync(PipeWriter pipeWriter, Stream content, Memory<byte> buffer, ValueTask<int> readTask)
+            static async Task WaitAndCopyAsync(HttpClientApplication app, Stream content, ValueTask<int> readTask)
             {
                 while (true)
                 {
                     int read = await readTask;
 
-                    WriteChunk(pipeWriter, buffer.Span.Slice(0, read));
+                    WriteChunk(app, app._responseContentBuffer.AsSpan(0, read));
 
                     if (read == 0)
                     {
                         return;
                     }
 
-                    await pipeWriter.FlushAsync();
+                    await app.Writer.FlushAsync();
 
-                    readTask = content.ReadAsync(buffer);
+                    readTask = content.ReadAsync(app._chunkedResponseContentBuffer);
                 }
 
-                static void WriteChunk(PipeWriter pipeWriter, ReadOnlySpan<byte> chunk)
+                static void WriteChunk(HttpClientApplication app, ReadOnlySpan<byte> chunk)
                 {
-                    var writer = GetWriter(pipeWriter, sizeHint: chunk.Length + ChunkedEncodingMaxChunkOverhead);
-
                     if (chunk.Length == 0)
                     {
-                        writer.Write(_chunkedEncodingFinalChunk);
+                        app.WriteToWriter(ChunkedEncodingFinalChunk);
                     }
                     else
                     {
-                        writer.WriteHexNumber((uint)chunk.Length);
-                        writer.Write(_crlf);
-                        writer.Write(chunk);
-                        writer.Write(_crlf);
+                        var writer = GetWriter(app.Writer, sizeHint: chunk.Length + ChunkedEncodingMaxChunkOverhead);
+                        writer.WriteChunkedEncodingChunkNoLengthCheck(chunk);
+                        writer.Commit();
                     }
-
-                    writer.Commit();
                 }
             }
         }
 
         private Task CopyRawResponseContent(Stream content)
         {
-            byte[] buffer = _responseContentBuffer;
+            ValueTask<int> readTask = content.ReadAsync(_responseContentBufferMemory);
 
-            while (true)
+            if (readTask.IsCompletedSuccessfully)
             {
-                ValueTask<int> readTask = content.ReadAsync(buffer);
+                int read = readTask.GetAwaiter().GetResult();
 
-                if (readTask.IsCompletedSuccessfully)
+                if (read != 0)
                 {
-                    int read = readTask.GetAwaiter().GetResult();
-                    if (read == 0)
-                    {
-                        return Task.CompletedTask;
-                    }
+                    WriteToWriter(_responseContentBuffer.AsSpan(0, read));
 
-                    Span<byte> writerBuffer = Writer.GetSpan(read);
-                    if (read <= writerBuffer.Length)
-                    {
-                        buffer.AsSpan(0, read).CopyTo(writerBuffer);
-                        Writer.Advance(read);
-                        continue;
-                    }
+                    readTask = content.ReadAsync(_responseContentBufferMemory);
 
-                    readTask = new ValueTask<int>(read);
+                    if (readTask.IsCompletedSuccessfully)
+                    {
+                        read = readTask.GetAwaiter().GetResult();
+
+                        if (read != 0)
+                        {
+                            readTask = new ValueTask<int>(read);
+                        }
+                    }
                 }
 
-                return WaitAndCopyAsync(Writer, content, buffer, readTask);
+                if (read == 0)
+                {
+                    return Task.CompletedTask;
+                }
             }
 
-            static async Task WaitAndCopyAsync(PipeWriter pipeWriter, Stream content, Memory<byte> buffer, ValueTask<int> readTask)
+            return WaitAndCopyAsync(this, content, readTask);
+
+            static async Task WaitAndCopyAsync(HttpClientApplication app, Stream content, ValueTask<int> readTask)
             {
                 while (true)
                 {
@@ -196,20 +214,20 @@ namespace LLRP
                         return;
                     }
 
-                    await pipeWriter.WriteAsync(buffer.Slice(0, read));
+                    await app.Writer.WriteAsync(app._responseContentBufferMemory.Slice(0, read));
 
-                    readTask = content.ReadAsync(buffer);
+                    readTask = content.ReadAsync(app._responseContentBufferMemory);
                 }
             }
         }
 
         private static void WriteResponseLineAndHeaders(HttpResponseMessage response, PipeWriter pipeWriter)
         {
-            var writer = GetWriter(pipeWriter, sizeHint: 2560);
+            var writer = GetWriter(pipeWriter, sizeHint: 1024);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                writer.Write(_http11OK);
+                writer.UnsafeWriteNoLengthCheck(Http11OK);
             }
             else
             {
@@ -222,7 +240,7 @@ namespace LLRP
                 WriteHeaders(ref writer, content.Headers);
             }
 
-            writer.Write(_crlf);
+            writer.WriteCRLF();
 
             writer.Commit();
 
@@ -233,19 +251,20 @@ namespace LLRP
                 {
                     var header = enumerator.Current;
                     writer.WriteAsciiString(header.Key);
-                    writer.Write(_colonSpace);
+                    writer.Write(ColonSpace);
+                    Debug.Assert(header.Value.Count <= 1);
                     writer.WriteUtf8String(header.Value.ToString());
-                    writer.Write(_crlf);
+                    writer.WriteCRLF();
                 }
             }
 
             static void WriteStatusLineSlow(ref BufferWriter<WriterAdapter> writer, HttpResponseMessage response)
             {
-                writer.Write(_http11Space);
+                writer.Write(Http11Space);
                 writer.WriteNumeric((uint)response.StatusCode);
-                writer.Write(_space);
+                writer.Write(Space);
                 writer.WriteUtf8String(response.ReasonPhrase ?? "Unknown");
-                writer.Write(_crlf);
+                writer.WriteCRLF();
             }
         }
 

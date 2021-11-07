@@ -238,7 +238,7 @@ namespace LLRP
 
         private Task CopyRawResponseContent()
         {
-            ValueTask<int> readTask = _request.ReadContentAsync(_chunkedResponseContentBuffer);
+            ValueTask<int> readTask = _request.ReadContentAsync(_responseContentBufferMemory);
 
             if (readTask.IsCompletedSuccessfully)
             {
@@ -248,7 +248,7 @@ namespace LLRP
                 {
                     WriteToWriter(_responseContentBuffer.AsSpan(0, read));
 
-                    readTask = _request.ReadContentAsync(_chunkedResponseContentBuffer);
+                    readTask = _request.ReadContentAsync(_responseContentBufferMemory);
 
                     if (readTask.IsCompletedSuccessfully)
                     {
