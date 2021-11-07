@@ -6,14 +6,22 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 
 namespace LLRP
 {
-    public sealed partial class LLRPApplication : IHttpConnection
+    internal abstract class ApplicationBase<TApplication> : IHttpConnection
     {
+        public abstract Task InitializeAsync();
+        public abstract Task ProcessRequestAsync();
+        public abstract void OnStartLine(HttpVersionAndMethod versionAndMethod, TargetOffsetPathLength targetPath, Span<byte> startLine);
+        public abstract void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value);
+
+        public void OnStaticIndexedHeader(int index) { }
+        public void OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value) { }
+        public void OnHeadersComplete(bool endStream) { }
+
+        public PipeReader Reader { get; set; } = null!;
+        public PipeWriter Writer { get; set; } = null!;
+
         private State _state;
-
-        public PipeReader Reader { get; set; }
-        public PipeWriter Writer { get; set; }
-
-        private HttpParser<ParsingAdapter> Parser { get; } = new();
+        private readonly HttpParser<ParsingAdapter> _parser = new();
 
         public async Task ExecuteAsync()
         {
@@ -81,7 +89,7 @@ namespace LLRP
 
             if (state == State.StartLine)
             {
-                if (Parser.ParseRequestLine(new ParsingAdapter(this), ref reader))
+                if (_parser.ParseRequestLine(new ParsingAdapter(this), ref reader))
                 {
                     state = State.Headers;
                 }
@@ -89,7 +97,7 @@ namespace LLRP
 
             if (state == State.Headers)
             {
-                var success = Parser.ParseHeaders(new ParsingAdapter(this), ref reader);
+                var success = _parser.ParseHeaders(new ParsingAdapter(this), ref reader);
 
                 if (success)
                 {
@@ -116,10 +124,6 @@ namespace LLRP
             }
         }
 
-        public void OnStaticIndexedHeader(int index) { }
-
-        public void OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value) { }
-
         [DoesNotReturn]
         private static void ThrowUnexpectedEndOfData()
         {
@@ -134,10 +138,10 @@ namespace LLRP
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static BufferWriter<WriterAdapter> GetWriter(PipeWriter pipeWriter, int sizeHint)
-            => new BufferWriter<WriterAdapter>(new WriterAdapter(pipeWriter), sizeHint);
+        internal static BufferWriter<WriterAdapter> GetWriter(PipeWriter pipeWriter, int sizeHint)
+            => new(new WriterAdapter(pipeWriter), sizeHint);
 
-        private struct WriterAdapter : IBufferWriter<byte>
+        internal struct WriterAdapter : IBufferWriter<byte>
         {
             public PipeWriter Writer;
 
@@ -156,9 +160,9 @@ namespace LLRP
 
         private struct ParsingAdapter : IHttpRequestLineHandler, IHttpHeadersHandler
         {
-            public LLRPApplication RequestHandler;
+            public ApplicationBase<TApplication> RequestHandler;
 
-            public ParsingAdapter(LLRPApplication requestHandler)
+            public ParsingAdapter(ApplicationBase<TApplication> requestHandler)
                 => RequestHandler = requestHandler;
 
             public void OnStaticIndexedHeader(int index) { }
@@ -168,8 +172,7 @@ namespace LLRP
             public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
                 => RequestHandler.OnHeader(name, value);
 
-            public void OnHeadersComplete(bool endStream)
-                => RequestHandler.OnHeadersComplete(endStream);
+            public void OnHeadersComplete(bool endStream) { }
 
             public void OnStartLine(HttpVersionAndMethod versionAndMethod, TargetOffsetPathLength targetPath, Span<byte> startLine)
                 => RequestHandler.OnStartLine(versionAndMethod, targetPath, startLine);

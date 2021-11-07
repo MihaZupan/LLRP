@@ -19,15 +19,23 @@ var hostBuilder = new WebHostBuilder()
     .UseBenchmarksConfiguration(config)
     .UseKestrel((context, options) =>
     {
-        var endPoint = context.Configuration.CreateIPEndPoint();
-        LLRPApplication.DownstreamAddresses = config.GetDownstreamAddresses();
+        var endPoint = context.CreateIPEndPoint();
+        DownstreamAddress.DownstreamAddresses = config.GetDownstreamAddresses();
 
-        Console.WriteLine($"Downstream: {LLRPApplication.DownstreamAddresses}");
-
-        options.Listen(endPoint, builder =>
+        if (config.ShouldUseHttpClient())
         {
-            builder.UseHttpApplication<LLRPApplication>();
-        });
+            options.Listen(endPoint, builder =>
+            {
+                builder.UseHttpApplication<HttpClientApplication>();
+            });
+        }
+        else
+        {
+            options.Listen(endPoint, builder =>
+            {
+                builder.UseHttpApplication<LLRPApplication>();
+            });
+        }
     })
     .UseSockets(options =>
     {
@@ -118,9 +126,9 @@ namespace PlatformBenchmarks
             return BindingAddress.Parse(url);
         }
 
-        public static IPEndPoint CreateIPEndPoint(this IConfiguration config)
+        public static IPEndPoint CreateIPEndPoint(this WebHostBuilderContext context)
         {
-            var address = config.CreateBindingAddress();
+            var address = context.Configuration.CreateBindingAddress();
 
             IPAddress? ip;
 
@@ -141,6 +149,12 @@ namespace PlatformBenchmarks
             //string list = config["downstream"] ?? "http://httpbin.org/anything/A";
             string list = config["downstream"] ?? "http://localhost:8081";
             return list.Split(';').Select(u => new DownstreamAddress(new Uri(u, UriKind.Absolute))).ToArray();
+        }
+
+        public static bool ShouldUseHttpClient(this IConfiguration config)
+        {
+            string? flag = config["httpclient"]?.ToLowerInvariant();
+            return flag == "true" || flag == "1";
         }
     }
 

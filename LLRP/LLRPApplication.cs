@@ -7,28 +7,8 @@ using System.Net.Sockets;
 
 namespace LLRP
 {
-    public sealed class DownstreamAddress
+    internal sealed class LLRPApplication : ApplicationBase<LLRPApplication>, IHttpHeadersSink
     {
-        public readonly byte[] Authority;
-        public readonly byte[] PathPrefix;
-        public readonly bool NoPathPrefix;
-        public readonly DnsEndPoint EndPoint;
-
-        public DownstreamAddress(Uri uri)
-        {
-            Authority = Encoding.UTF8.GetBytes(uri.Authority);
-            PathPrefix = Encoding.UTF8.GetBytes(uri.AbsolutePath);
-            NoPathPrefix = uri.AbsolutePath.AsSpan().TrimStart('/').Length == 0;
-            EndPoint = new DnsEndPoint(uri.Host, uri.Port);
-        }
-    }
-
-    public sealed partial class LLRPApplication : IHttpHeadersSink
-    {
-        public static DownstreamAddress[] DownstreamAddresses = null!;
-        private static int _connectionCounter;
-        private readonly int _connectionCount;
-
         private static ReadOnlySpan<byte> Http11Space => new byte[]
         {
             (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1',  (byte)' '
@@ -64,40 +44,37 @@ namespace LLRP
         private readonly Memory<byte> _responseContentBufferMemory;
         private readonly Memory<byte> _chunkedResponseContentBuffer;
 
+        private readonly DownstreamAddress _downstream;
         private readonly byte[] _authority;
-
         private readonly bool _noPathPrefix;
         private readonly int _pathAndQueryOffset;
         private byte[] _pathAndQueryBuffer;
 
-        private readonly DownstreamAddress _downstream;
         private Http1Connection _connection;
         private ValueHttpRequest _request;
         private bool _isChunkedResponse;
 
-#nullable disable
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor.
         public LLRPApplication()
-#nullable enable
+#pragma warning restore CS8618
         {
             _responseContentBufferMemory = _responseContentBuffer.AsMemory();
             _chunkedResponseContentBuffer = _responseContentBufferMemory.Slice(0, ResponseContentBufferLength - ChunkedEncodingMaxOverhead);
 
-            _connectionCount = Interlocked.Increment(ref _connectionCounter);
-            _downstream = DownstreamAddresses[_connectionCount % DownstreamAddresses.Length];
-
+            _downstream = DownstreamAddress.GetNextAddress();
             _authority = _downstream.Authority;
             _noPathPrefix = _downstream.NoPathPrefix;
 
             if (!_noPathPrefix)
             {
                 ReadOnlySpan<byte> pathPrefix = _downstream.PathPrefix.AsSpan();
-                _pathAndQueryBuffer = new byte[Math.Max(4096, pathPrefix.Length)];
+                _pathAndQueryBuffer = new byte[Math.Max(256, pathPrefix.Length)];
                 pathPrefix.CopyTo(_pathAndQueryBuffer);
                 _pathAndQueryOffset = pathPrefix.Length;
             }
         }
 
-        public async Task InitializeAsync()
+        public override async Task InitializeAsync()
         {
             var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
 
@@ -126,8 +103,8 @@ namespace LLRP
         public void OnHeader(object? state, ReadOnlySpan<byte> headerName, ReadOnlySpan<byte> headerValue)
         {
             if (headerName.Length == 17 &&
-                EqualsIgnoreCase(headerName, EncodedTransferEncodingName) &&
-                EqualsIgnoreCase(headerValue, EncodedTransferEncodingChunkedValue))
+                headerName.EqualsIgnoreCase(EncodedTransferEncodingName) &&
+                headerValue.EqualsIgnoreCase(EncodedTransferEncodingChunkedValue))
             {
                 _isChunkedResponse = true;
             }
@@ -156,29 +133,7 @@ namespace LLRP
             BufferExtensions.WriteCRLF(ref pBuf);
         }
 
-        private static bool EqualsIgnoreCase(ReadOnlySpan<byte> wireValue, ReadOnlySpan<byte> expectedValueLowerCase)
-        {
-            if (wireValue.Length != expectedValueLowerCase.Length) return false;
-
-            ref byte xRef = ref MemoryMarshal.GetReference(wireValue);
-            ref byte yRef = ref MemoryMarshal.GetReference(expectedValueLowerCase);
-
-            for (uint i = 0; i < (uint)wireValue.Length; ++i)
-            {
-                byte xv = Unsafe.Add(ref xRef, (IntPtr)i);
-
-                if ((xv - (uint)'A') <= ('Z' - 'A'))
-                {
-                    xv |= 0x20;
-                }
-
-                if (xv != Unsafe.Add(ref yRef, (IntPtr)i)) return false;
-            }
-
-            return true;
-        }
-
-        public async Task ProcessRequestAsync()
+        public override async Task ProcessRequestAsync()
         {
             await _request.CompleteRequestAsync();
 
@@ -331,6 +286,7 @@ namespace LLRP
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteResponseStatusLine()
         {
             if (_request.StatusCode == HttpStatusCode.OK)
@@ -355,7 +311,7 @@ namespace LLRP
             }
         }
 
-        public void OnStartLine(HttpVersionAndMethod versionAndMethod, TargetOffsetPathLength targetPath, Span<byte> startLine)
+        public override void OnStartLine(HttpVersionAndMethod versionAndMethod, TargetOffsetPathLength targetPath, Span<byte> startLine)
         {
             ValueTask<ValueHttpRequest?> requestTask = _connection.CreateNewRequestAsync(HttpPrimitiveVersion.Version11, HttpVersionPolicy.RequestVersionExact);
             Debug.Assert(requestTask.IsCompletedSuccessfully);
@@ -396,7 +352,7 @@ namespace LLRP
             return _pathAndQueryBuffer.AsSpan(0, length);
         }
 
-        public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+        public override void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
         {
             if (name.Length == 4)
             {
@@ -422,11 +378,6 @@ namespace LLRP
             }
 
             _request.WriteHeader(name, value);
-        }
-
-        public void OnHeadersComplete(bool endStream)
-        {
-
         }
     }
 }
