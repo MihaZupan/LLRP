@@ -57,7 +57,7 @@ jobs:
     port: 8080
 
 scenarios:
-  proxy-llrp:
+  llrp:
     downstream:
       job: downstream
     application:
@@ -65,17 +65,17 @@ scenarios:
     load:
       job: bombardier
 
-  proxy-httpclient:
+  httpclient:
     downstream:
       job: downstream
     application:
       job: llrp
+      variables:
+        httpclient: 1
     load:
       job: bombardier
-    variables:
-      httpclient: true
 
-  proxy-yarp:
+  yarp:
     downstream:
       job: downstream
     application:
