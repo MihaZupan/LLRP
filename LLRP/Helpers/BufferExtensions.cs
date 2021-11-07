@@ -1,12 +1,8 @@
 ﻿using System.Buffers;
+using System.Buffers.Text;
 
 namespace LLRP.Helpers
 {
-    // Same as KestrelHttpServer\src\Kestrel.Core\Internal\Http\PipelineExtensions.cs
-    // However methods accept T : struct, IBufferWriter<byte> rather than PipeWriter.
-    // This allows a struct wrapper to turn CountingBufferWriter into a non-shared generic,
-    // while still offering the WriteNumeric extension.
-
     internal static class BufferExtensions
     {
         private const int _maxULongByteLength = 20;
@@ -75,6 +71,20 @@ namespace LLRP.Helpers
             {
                 Unsafe.WriteUnaligned(ref pBuf, (ushort)0x0D0A);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void WriteHexNumberMultiWrite<T>(ref this BufferWriter<T> buffer, uint number)
+             where T : IBufferWriter<byte>
+        {
+            Span<byte> byteBuffer = stackalloc byte[16];
+
+            if (!Utf8Formatter.TryFormat(number, byteBuffer, out int bytesWritten, 'X'))
+            {
+                Debug.Fail("Failed to encode hex");
+            }
+
+            buffer.Write(MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(byteBuffer), bytesWritten));
         }
     }
 }

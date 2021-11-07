@@ -207,5 +207,18 @@ namespace LLRP.Helpers
 
             Advance(chunk.Length + bytesWritten + 4);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteHexNumber(uint number)
+        {
+            if (Utf8Formatter.TryFormat(number, Span, out int bytesWritten, 'X'))
+            {
+                Advance(bytesWritten);
+            }
+            else
+            {
+                BufferExtensions.WriteHexNumberMultiWrite(ref this, number);
+            }
+        }
     }
 }

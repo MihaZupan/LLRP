@@ -2,6 +2,7 @@
 {
     public sealed class DownstreamAddress
     {
+        public readonly Uri Uri;
         public readonly byte[] Authority;
         public readonly byte[] PathPrefix;
         public readonly bool NoPathPrefix;
@@ -9,6 +10,7 @@
 
         public DownstreamAddress(Uri uri)
         {
+            Uri = uri;
             Authority = Encoding.UTF8.GetBytes(uri.Authority);
             PathPrefix = Encoding.UTF8.GetBytes(uri.AbsolutePath);
             NoPathPrefix = uri.AbsolutePath.AsSpan().TrimStart('/').Length == 0;
