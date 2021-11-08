@@ -7,7 +7,7 @@ namespace LLRP
 {
     internal sealed partial class HttpClientApplication : ApplicationBase<HttpClientApplication>
     {
-        private static readonly HttpMessageInvoker _client = new(new SocketsHttpHandler()
+        private readonly HttpMessageInvoker _client = new(new SocketsHttpHandler()
         {
             UseProxy = false,
             AllowAutoRedirect = false,
