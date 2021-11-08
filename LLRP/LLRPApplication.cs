@@ -92,14 +92,6 @@ namespace LLRP
             _connection = new Http1Connection(networkStream, HttpPrimitiveVersion.Version11);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void WriteToWriter(ReadOnlySpan<byte> buffer)
-        {
-            Span<byte> destination = Writer.GetSpan(buffer.Length);
-            Unsafe.CopyBlockUnaligned(ref MemoryMarshal.GetReference(destination), ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
-            Writer.Advance(buffer.Length);
-        }
-
         public void OnHeader(object? state, ReadOnlySpan<byte> headerName, ReadOnlySpan<byte> headerValue)
         {
             if (headerName.Length == 17 &&

@@ -66,14 +66,6 @@ namespace LLRP
 
         public override Task InitializeAsync() => Task.CompletedTask;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void WriteToWriter(ReadOnlySpan<byte> buffer)
-        {
-            Span<byte> destination = Writer.GetSpan(buffer.Length);
-            Unsafe.CopyBlockUnaligned(ref MemoryMarshal.GetReference(destination), ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
-            Writer.Advance(buffer.Length);
-        }
-
         public override async Task ProcessRequestAsync()
         {
             Debug.Assert(_request is not null);

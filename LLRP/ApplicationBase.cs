@@ -138,7 +138,15 @@ namespace LLRP
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static BufferWriter<WriterAdapter> GetWriter(PipeWriter pipeWriter, int sizeHint)
+        protected void WriteToWriter(ReadOnlySpan<byte> buffer)
+        {
+            Span<byte> destination = Writer.GetSpan(buffer.Length);
+            Unsafe.CopyBlockUnaligned(ref MemoryMarshal.GetReference(destination), ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
+            Writer.Advance(buffer.Length);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected static BufferWriter<WriterAdapter> GetWriter(PipeWriter pipeWriter, int sizeHint)
             => new(new WriterAdapter(pipeWriter), sizeHint);
 
         internal struct WriterAdapter : IBufferWriter<byte>
