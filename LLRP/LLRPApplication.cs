@@ -9,19 +9,6 @@ namespace LLRP
 {
     internal sealed class LLRPApplication : ApplicationBase<LLRPApplication>, IHttpHeadersSink
     {
-        private static ReadOnlySpan<byte> Http11Space => new byte[]
-        {
-            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1',  (byte)' '
-        };
-        private static ReadOnlySpan<byte> Http11OK => new byte[]
-        {
-            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1',  (byte)' ',
-            (byte)'2', (byte)'0', (byte)'0', (byte)' ', (byte)'O', (byte)'K', (byte)'\r', (byte)'\n'
-        };
-        private static ReadOnlySpan<byte> ChunkedEncodingFinalChunk => new byte[]
-        {
-            (byte)'0', (byte)'\r', (byte)'n', (byte)'\r', (byte)'\n'
-        };
         private static ReadOnlySpan<byte> EncodedTransferEncodingName => new byte[]
         {
             (byte)'t', (byte)'r', (byte)'a', (byte)'n', (byte)'s', (byte)'f', (byte)'e', (byte)'r',
@@ -33,18 +20,6 @@ namespace LLRP
             (byte)'c', (byte)'h', (byte)'u', (byte)'n', (byte)'k', (byte)'e', (byte)'d'
         };
 
-        private const int CRLF = 2;
-        private const int ChunkedEncodingMaxChunkLengthDigits = 4; // Valid as long as ResponseContentBufferLength <= 65536
-        private const int ChunkedEncodingMaxChunkOverhead = ChunkedEncodingMaxChunkLengthDigits + CRLF + CRLF;
-        private const int ChunkedEncodingFinalChunkLength = 1 + CRLF + CRLF;
-        private const int ChunkedEncodingMaxOverhead = ChunkedEncodingMaxChunkOverhead + ChunkedEncodingFinalChunkLength;
-
-        private const int ResponseContentBufferLength = 4096;
-        private readonly byte[] _responseContentBuffer = new byte[ResponseContentBufferLength];
-        private readonly Memory<byte> _responseContentBufferMemory;
-        private readonly Memory<byte> _chunkedResponseContentBuffer;
-
-        private readonly DownstreamAddress _downstream;
         private readonly byte[] _authority;
         private readonly bool _noPathPrefix;
         private readonly int _pathAndQueryOffset;
@@ -55,19 +30,15 @@ namespace LLRP
         private bool _isChunkedResponse;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor.
-        public LLRPApplication()
+        public LLRPApplication() : base()
 #pragma warning restore CS8618
         {
-            _responseContentBufferMemory = _responseContentBuffer.AsMemory();
-            _chunkedResponseContentBuffer = _responseContentBufferMemory.Slice(0, ResponseContentBufferLength - ChunkedEncodingMaxOverhead);
-
-            _downstream = DownstreamAddress.GetNextAddress();
-            _authority = _downstream.Authority;
-            _noPathPrefix = _downstream.NoPathPrefix;
+            _authority = Downstream.Authority;
+            _noPathPrefix = Downstream.NoPathPrefix;
 
             if (!_noPathPrefix)
             {
-                ReadOnlySpan<byte> pathPrefix = _downstream.PathPrefix.AsSpan();
+                ReadOnlySpan<byte> pathPrefix = Downstream.PathPrefix.AsSpan();
                 _pathAndQueryBuffer = new byte[Math.Max(256, pathPrefix.Length)];
                 pathPrefix.CopyTo(_pathAndQueryBuffer);
                 _pathAndQueryOffset = pathPrefix.Length;
@@ -80,7 +51,7 @@ namespace LLRP
 
             try
             {
-                await socket.ConnectAsync(_downstream.EndPoint);
+                await socket.ConnectAsync(Downstream.EndPoint);
             }
             catch
             {
@@ -154,7 +125,7 @@ namespace LLRP
 
         private Task CopyChunkedResponseContent()
         {
-            ValueTask<int> readTask = _request.ReadContentAsync(_chunkedResponseContentBuffer);
+            ValueTask<int> readTask = _request.ReadContentAsync(ChunkedResponseContentBuffer);
 
             if (readTask.IsCompletedSuccessfully)
             {
@@ -164,9 +135,9 @@ namespace LLRP
 
                 if (read != 0)
                 {
-                    writer.WriteChunkedEncodingChunkNoLengthCheck(_responseContentBuffer.AsSpan(0, read));
+                    writer.WriteChunkedEncodingChunkNoLengthCheck(ResponseContentBuffer.AsSpan(0, read));
 
-                    readTask = _request.ReadContentAsync(_chunkedResponseContentBuffer);
+                    readTask = _request.ReadContentAsync(ChunkedResponseContentBuffer);
 
                     if (readTask.IsCompletedSuccessfully)
                     {
@@ -200,7 +171,7 @@ namespace LLRP
                 {
                     int read = await readTask;
 
-                    WriteChunk(app, app._responseContentBuffer.AsSpan(0, read));
+                    WriteChunk(app, app.ResponseContentBuffer.AsSpan(0, read));
 
                     if (read == 0)
                     {
@@ -209,7 +180,7 @@ namespace LLRP
 
                     await app.Writer.FlushAsync();
 
-                    readTask = app._request.ReadContentAsync(app._chunkedResponseContentBuffer);
+                    readTask = app._request.ReadContentAsync(app.ChunkedResponseContentBuffer);
                 }
 
                 static void WriteChunk(LLRPApplication app, ReadOnlySpan<byte> chunk)
@@ -230,7 +201,7 @@ namespace LLRP
 
         private Task CopyRawResponseContent()
         {
-            ValueTask<int> readTask = _request.ReadContentAsync(_responseContentBufferMemory);
+            ValueTask<int> readTask = _request.ReadContentAsync(ResponseContentBufferMemory);
 
             if (readTask.IsCompletedSuccessfully)
             {
@@ -238,9 +209,9 @@ namespace LLRP
 
                 if (read != 0)
                 {
-                    WriteToWriter(_responseContentBuffer.AsSpan(0, read));
+                    WriteToWriter(ResponseContentBuffer.AsSpan(0, read));
 
-                    readTask = _request.ReadContentAsync(_responseContentBufferMemory);
+                    readTask = _request.ReadContentAsync(ResponseContentBufferMemory);
 
                     if (readTask.IsCompletedSuccessfully)
                     {
@@ -271,9 +242,9 @@ namespace LLRP
                         return;
                     }
 
-                    await app.Writer.WriteAsync(app._responseContentBufferMemory.Slice(0, read));
+                    await app.Writer.WriteAsync(app.ResponseContentBufferMemory.Slice(0, read));
 
-                    readTask = app._request.ReadContentAsync(app._responseContentBufferMemory);
+                    readTask = app._request.ReadContentAsync(app.ResponseContentBufferMemory);
                 }
             }
         }

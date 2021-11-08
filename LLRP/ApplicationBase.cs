@@ -6,6 +6,36 @@ namespace LLRP
 {
     internal abstract class ApplicationBase<TApplication> : IHttpConnection
     {
+        protected static ReadOnlySpan<byte> Http11Space => new byte[]
+        {
+            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1',  (byte)' '
+        };
+        protected static ReadOnlySpan<byte> Http11OK => new byte[]
+        {
+            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1',  (byte)' ',
+            (byte)'2', (byte)'0', (byte)'0', (byte)' ', (byte)'O', (byte)'K', (byte)'\r', (byte)'\n'
+        };
+        protected static ReadOnlySpan<byte> ChunkedEncodingFinalChunk => new byte[]
+        {
+            (byte)'0', (byte)'\r', (byte)'n', (byte)'\r', (byte)'\n'
+        };
+
+        private const int CRLF = 2;
+        private const int ChunkedEncodingMaxChunkLengthDigits = 4; // Valid as long as ResponseContentBufferLength <= 65536
+        private const int ChunkedEncodingFinalChunkLength = 1 + CRLF + CRLF;
+        protected const int ChunkedEncodingMaxChunkOverhead = ChunkedEncodingMaxChunkLengthDigits + CRLF + CRLF;
+        protected const int ChunkedEncodingMaxOverhead = ChunkedEncodingMaxChunkOverhead + ChunkedEncodingFinalChunkLength;
+
+        public PipeReader Reader { get; set; } = null!;
+        public PipeWriter Writer { get; set; } = null!;
+
+        private const int ResponseContentBufferLength = 4096;
+        protected readonly byte[] ResponseContentBuffer;
+        protected readonly Memory<byte> ResponseContentBufferMemory;
+        protected readonly Memory<byte> ChunkedResponseContentBuffer;
+
+        protected readonly DownstreamAddress Downstream;
+
         public abstract Task InitializeAsync();
         public abstract Task ProcessRequestAsync();
         public abstract void OnStartLine(HttpVersionAndMethod versionAndMethod, TargetOffsetPathLength targetPath, Span<byte> startLine);
@@ -15,8 +45,13 @@ namespace LLRP
         public void OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value) { }
         public void OnHeadersComplete(bool endStream) { }
 
-        public PipeReader Reader { get; set; } = null!;
-        public PipeWriter Writer { get; set; } = null!;
+        protected ApplicationBase()
+        {
+            ResponseContentBuffer = new byte[ResponseContentBufferLength];
+            ResponseContentBufferMemory = ResponseContentBuffer;
+            ChunkedResponseContentBuffer = ResponseContentBuffer.AsMemory(0, ResponseContentBufferLength - ChunkedEncodingMaxOverhead);
+            Downstream = DownstreamAddress.GetNextAddress();
+        }
 
         private State _state;
         private readonly HttpParser<ParsingAdapter> _parser = new();

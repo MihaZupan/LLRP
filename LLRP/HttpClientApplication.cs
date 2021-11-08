@@ -23,42 +23,14 @@ namespace LLRP
         {
             (byte)':', (byte)' '
         };
-        private static ReadOnlySpan<byte> Http11Space => new byte[]
-        {
-            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1',  (byte)' '
-        };
-        private static ReadOnlySpan<byte> Http11OK => new byte[]
-        {
-            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1',  (byte)' ',
-            (byte)'2', (byte)'0', (byte)'0', (byte)' ', (byte)'O', (byte)'K', (byte)'\r', (byte)'\n'
-        };
-        private static ReadOnlySpan<byte> ChunkedEncodingFinalChunk => new byte[]
-        {
-            (byte)'0', (byte)'\r', (byte)'n', (byte)'\r', (byte)'\n'
-        };
 
-        private const int CRLF = 2;
-        private const int ChunkedEncodingMaxChunkLengthDigits = 4; // Valid as long as ResponseContentBufferLength <= 65536
-        private const int ChunkedEncodingMaxChunkOverhead = ChunkedEncodingMaxChunkLengthDigits + CRLF + CRLF;
-        private const int ChunkedEncodingFinalChunkLength = 1 + CRLF + CRLF;
-        private const int ChunkedEncodingMaxOverhead = ChunkedEncodingMaxChunkOverhead + ChunkedEncodingFinalChunkLength;
-
-        private const int ResponseContentBufferLength = 4096;
-        private readonly byte[] _responseContentBuffer = new byte[ResponseContentBufferLength];
-        private readonly Memory<byte> _responseContentBufferMemory;
-        private readonly Memory<byte> _chunkedResponseContentBuffer;
-
-        private readonly DownstreamAddress _downstream;
         private readonly ConnectionUriBuilder _uriBuilder;
         private HttpRequestMessage? _request;
         private HttpHeaders? _requestHeaders;
 
-        public HttpClientApplication()
+        public HttpClientApplication() : base()
         {
-            _responseContentBufferMemory = _responseContentBuffer;
-            _chunkedResponseContentBuffer = _responseContentBuffer.AsMemory(0, ResponseContentBufferLength - ChunkedEncodingMaxOverhead);
-            _downstream = DownstreamAddress.GetNextAddress();
-            _uriBuilder = new ConnectionUriBuilder(_downstream.Uri);
+            _uriBuilder = new ConnectionUriBuilder(Downstream.Uri);
         }
 
         public override Task InitializeAsync() => Task.CompletedTask;
@@ -84,7 +56,7 @@ namespace LLRP
 
         private Task CopyChunkedResponseContent(Stream content)
         {
-            ValueTask<int> readTask = content.ReadAsync(_chunkedResponseContentBuffer);
+            ValueTask<int> readTask = content.ReadAsync(ChunkedResponseContentBuffer);
 
             if (readTask.IsCompletedSuccessfully)
             {
@@ -94,9 +66,9 @@ namespace LLRP
 
                 if (read != 0)
                 {
-                    writer.WriteChunkedEncodingChunkNoLengthCheck(_responseContentBuffer.AsSpan(0, read));
+                    writer.WriteChunkedEncodingChunkNoLengthCheck(ResponseContentBuffer.AsSpan(0, read));
 
-                    readTask = content.ReadAsync(_chunkedResponseContentBuffer);
+                    readTask = content.ReadAsync(ChunkedResponseContentBuffer);
 
                     if (readTask.IsCompletedSuccessfully)
                     {
@@ -130,7 +102,7 @@ namespace LLRP
                 {
                     int read = await readTask;
 
-                    WriteChunk(app, app._responseContentBuffer.AsSpan(0, read));
+                    WriteChunk(app, app.ResponseContentBuffer.AsSpan(0, read));
 
                     if (read == 0)
                     {
@@ -139,7 +111,7 @@ namespace LLRP
 
                     await app.Writer.FlushAsync();
 
-                    readTask = content.ReadAsync(app._chunkedResponseContentBuffer);
+                    readTask = content.ReadAsync(app.ChunkedResponseContentBuffer);
                 }
 
                 static void WriteChunk(HttpClientApplication app, ReadOnlySpan<byte> chunk)
@@ -160,7 +132,7 @@ namespace LLRP
 
         private Task CopyRawResponseContent(Stream content)
         {
-            ValueTask<int> readTask = content.ReadAsync(_responseContentBufferMemory);
+            ValueTask<int> readTask = content.ReadAsync(ResponseContentBufferMemory);
 
             if (readTask.IsCompletedSuccessfully)
             {
@@ -168,9 +140,9 @@ namespace LLRP
 
                 if (read != 0)
                 {
-                    WriteToWriter(_responseContentBuffer.AsSpan(0, read));
+                    WriteToWriter(ResponseContentBuffer.AsSpan(0, read));
 
-                    readTask = content.ReadAsync(_responseContentBufferMemory);
+                    readTask = content.ReadAsync(ResponseContentBufferMemory);
 
                     if (readTask.IsCompletedSuccessfully)
                     {
@@ -201,9 +173,9 @@ namespace LLRP
                         return;
                     }
 
-                    await app.Writer.WriteAsync(app._responseContentBufferMemory.Slice(0, read));
+                    await app.Writer.WriteAsync(app.ResponseContentBufferMemory.Slice(0, read));
 
-                    readTask = content.ReadAsync(app._responseContentBufferMemory);
+                    readTask = content.ReadAsync(app.ResponseContentBufferMemory);
                 }
             }
         }
