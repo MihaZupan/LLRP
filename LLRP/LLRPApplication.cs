@@ -9,17 +9,6 @@ namespace LLRP
 {
     internal sealed class LLRPApplication : ApplicationBase<LLRPApplication>, IHttpHeadersSink
     {
-        private static ReadOnlySpan<byte> EncodedTransferEncodingName => new byte[]
-        {
-            (byte)'t', (byte)'r', (byte)'a', (byte)'n', (byte)'s', (byte)'f', (byte)'e', (byte)'r',
-            (byte)'-',
-            (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g'
-        };
-        private static ReadOnlySpan<byte> EncodedTransferEncodingChunkedValue => new byte[]
-        {
-            (byte)'c', (byte)'h', (byte)'u', (byte)'n', (byte)'k', (byte)'e', (byte)'d'
-        };
-
         private readonly byte[] _authority;
         private readonly bool _noPathPrefix;
         private readonly int _pathAndQueryOffset;
@@ -66,8 +55,8 @@ namespace LLRP
         public void OnHeader(object? state, ReadOnlySpan<byte> headerName, ReadOnlySpan<byte> headerValue)
         {
             if (headerName.Length == 17 &&
-                headerName.EqualsIgnoreCase(EncodedTransferEncodingName) &&
-                headerValue.EqualsIgnoreCase(EncodedTransferEncodingChunkedValue))
+                headerName.EqualsIgnoreCase(Constants.EncodedTransferEncodingName) &&
+                headerValue.EqualsIgnoreCase(Constants.EncodedTransferEncodingChunkedValue))
             {
                 _isChunkedResponse = true;
             }
@@ -152,7 +141,7 @@ namespace LLRP
 
                 if (read == 0)
                 {
-                    writer.UnsafeWriteNoLengthCheck(ChunkedEncodingFinalChunk);
+                    writer.UnsafeWriteNoLengthCheck(Constants.ChunkedEncodingFinalChunk);
                 }
 
                 writer.Commit();
@@ -187,7 +176,7 @@ namespace LLRP
                 {
                     if (chunk.Length == 0)
                     {
-                        app.WriteToWriter(ChunkedEncodingFinalChunk);
+                        app.WriteToWriter(Constants.ChunkedEncodingFinalChunk);
                     }
                     else
                     {
@@ -254,7 +243,7 @@ namespace LLRP
         {
             if (_request.StatusCode == HttpStatusCode.OK)
             {
-                WriteToWriter(Http11OK);
+                WriteToWriter(Constants.Http11OK);
             }
             else
             {
@@ -265,7 +254,7 @@ namespace LLRP
             {
                 HttpStatusCode statusCode = app._request.StatusCode;
                 var writer = GetWriter(app.Writer, sizeHint: 64);
-                writer.UnsafeWriteNoLengthCheck(Http11Space);
+                writer.UnsafeWriteNoLengthCheck(Constants.Http11Space);
                 writer.WriteNumeric((uint)statusCode);
                 writer.Write((byte)' ');
                 writer.WriteAsciiString(ReasonPhrases.GetReasonPhrase((int)statusCode));

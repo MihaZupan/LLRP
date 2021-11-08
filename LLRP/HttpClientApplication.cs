@@ -15,15 +15,6 @@ namespace LLRP
             UseCookies = false
         });
 
-        private static ReadOnlySpan<byte> Space => new byte[]
-        {
-            (byte)' '
-        };
-        private static ReadOnlySpan<byte> ColonSpace => new byte[]
-        {
-            (byte)':', (byte)' '
-        };
-
         private readonly ConnectionUriBuilder _uriBuilder;
         private HttpRequestMessage? _request;
         private HttpHeaders? _requestHeaders;
@@ -83,7 +74,7 @@ namespace LLRP
 
                 if (read == 0)
                 {
-                    writer.UnsafeWriteNoLengthCheck(ChunkedEncodingFinalChunk);
+                    writer.UnsafeWriteNoLengthCheck(Constants.ChunkedEncodingFinalChunk);
                 }
 
                 writer.Commit();
@@ -118,7 +109,7 @@ namespace LLRP
                 {
                     if (chunk.Length == 0)
                     {
-                        app.WriteToWriter(ChunkedEncodingFinalChunk);
+                        app.WriteToWriter(Constants.ChunkedEncodingFinalChunk);
                     }
                     else
                     {
@@ -186,7 +177,7 @@ namespace LLRP
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                writer.UnsafeWriteNoLengthCheck(Http11OK);
+                writer.UnsafeWriteNoLengthCheck(Constants.Http11OK);
             }
             else
             {
@@ -210,7 +201,7 @@ namespace LLRP
                 {
                     var header = enumerator.Current;
                     writer.WriteAsciiString(header.Key);
-                    writer.Write(ColonSpace);
+                    writer.Write(Constants.ColonSpace);
                     Debug.Assert(header.Value.Count <= 1);
                     writer.WriteUtf8String(header.Value.ToString());
                     writer.WriteCRLF();
@@ -219,9 +210,9 @@ namespace LLRP
 
             static void WriteStatusLineSlow(ref BufferWriter<WriterAdapter> writer, HttpResponseMessage response)
             {
-                writer.Write(Http11Space);
+                writer.Write(Constants.Http11Space);
                 writer.WriteNumeric((uint)response.StatusCode);
-                writer.Write(Space);
+                writer.Write(Constants.Space);
                 writer.WriteUtf8String(response.ReasonPhrase ?? "Unknown");
                 writer.WriteCRLF();
             }
