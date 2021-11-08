@@ -16,12 +16,16 @@ namespace LLRP
         });
 
         private readonly ConnectionUriBuilder _uriBuilder;
+        private readonly ConnectionHeaderValueCache _acceptHeaderCache;
+        private readonly ConnectionHeaderValueCache _userAgentHeaderCache;
         private HttpRequestMessage? _request;
         private HttpHeaders? _requestHeaders;
 
         public HttpClientApplication() : base()
         {
             _uriBuilder = new ConnectionUriBuilder(Downstream.Uri);
+            _acceptHeaderCache = new();
+            _userAgentHeaderCache = new();
         }
 
         public override Task InitializeAsync() => Task.CompletedTask;
@@ -242,7 +246,12 @@ namespace LLRP
                     return;
                 }
 
-                _requestHeaders.TryAddWithoutValidation(header.Name, header.GetValue(value));
+                string valueString = header.TryGetValue(value) ?? (
+                    ReferenceEquals(header, KnownHeaders.Accept) ? _acceptHeaderCache.GetHeaderValue(value) :
+                    ReferenceEquals(header, KnownHeaders.UserAgent) ? _userAgentHeaderCache.GetHeaderValue(value) :
+                    Encoding.UTF8.GetString(value));
+
+                _requestHeaders.TryAddWithoutValidation(header.Name, valueString);
             }
             else
             {

@@ -23,7 +23,7 @@ namespace LLRP.Helpers
             public readonly string[]? KnownValues;
             public readonly byte[][]? KnownValueBytes;
 
-            public string GetValue(ReadOnlySpan<byte> value)
+            public string? TryGetValue(ReadOnlySpan<byte> value)
             {
                 var values = KnownValueBytes;
                 if (values is not null)
@@ -37,7 +37,7 @@ namespace LLRP.Helpers
                     }
                 }
 
-                return Encoding.UTF8.GetString(value);
+                return null;
             }
         }
 
@@ -60,7 +60,7 @@ namespace LLRP.Helpers
         public static readonly KnownHeader AltUsed = new KnownHeader("Alt-Used");
         public static readonly KnownHeader Authorization = new KnownHeader("Authorization");
         public static readonly KnownHeader CacheControl = new KnownHeader("Cache-Control", new string[] { "must-revalidate", "no-cache", "no-store", "no-transform", "private", "proxy-revalidate", "public" });
-        public static readonly KnownHeader Connection = new KnownHeader("Connection", new string[] { "close" });
+        public static readonly KnownHeader Connection = new KnownHeader("Connection", new string[] { "keep-alive", "close" });
         public static readonly KnownHeader ContentDisposition = new KnownHeader("Content-Disposition", new string[] { "inline", "attachment" });
         public static readonly KnownHeader ContentEncoding = new KnownHeader("Content-Encoding", new string[] { "gzip", "deflate", "br", "compress", "identity" });
         public static readonly KnownHeader ContentLanguage = new KnownHeader("Content-Language");
