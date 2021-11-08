@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 using Microsoft.Extensions.Configuration;
 using PlatformBenchmarks;
-using System.IO.Pipelines;
 using System.Linq;
 
 var config = new ConfigurationBuilder()

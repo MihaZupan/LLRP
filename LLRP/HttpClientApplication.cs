@@ -1,7 +1,5 @@
 ﻿using LLRP.Helpers;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
-using System.IO;
-using System.IO.Pipelines;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
@@ -16,7 +14,6 @@ namespace LLRP
             AutomaticDecompression = DecompressionMethods.None,
             UseCookies = false
         });
-        private static readonly Encoding _utf8 = Encoding.UTF8;
 
         private static ReadOnlySpan<byte> Space => new byte[]
         {
@@ -286,7 +283,7 @@ namespace LLRP
             }
             else
             {
-                _requestHeaders.TryAddWithoutValidation(_utf8.GetString(name), _utf8.GetString(value));
+                _requestHeaders.TryAddWithoutValidation(Encoding.ASCII.GetString(name), Encoding.UTF32.GetString(value));
             }
         }
     }

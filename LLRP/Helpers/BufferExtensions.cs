@@ -1,7 +1,4 @@
-﻿using System.Buffers;
-using System.Buffers.Text;
-
-namespace LLRP.Helpers
+﻿namespace LLRP.Helpers
 {
     internal static class BufferExtensions
     {

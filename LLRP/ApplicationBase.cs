@@ -1,6 +1,4 @@
-﻿using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
-using System.IO.Pipelines;
+﻿using System.Diagnostics.CodeAnalysis;
 using LLRP.Helpers;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 

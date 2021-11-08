@@ -1,6 +1,4 @@
-﻿using System.Buffers;
-
-namespace LLRP.Helpers
+﻿namespace LLRP.Helpers
 {
     internal sealed class ConnectionUriBuilder
     {

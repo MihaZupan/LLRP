@@ -1,7 +1,4 @@
-﻿using System.Buffers;
-using System.Buffers.Text;
-
-namespace LLRP.Helpers
+﻿namespace LLRP.Helpers
 {
     internal ref struct BufferWriter<T> where T : IBufferWriter<byte>
     {

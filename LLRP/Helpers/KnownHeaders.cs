@@ -6,8 +6,6 @@ namespace LLRP.Helpers
     {
         public sealed class KnownHeader
         {
-            private static readonly Encoding _utf8 = Encoding.UTF8;
-
             public KnownHeader(string name, string[]? knownValues = null)
             {
                 Name = name;
@@ -16,7 +14,7 @@ namespace LLRP.Helpers
 
                 if (knownValues is not null)
                 {
-                    KnownValueBytes = knownValues.Select(v => _utf8.GetBytes(v)).ToArray();
+                    KnownValueBytes = knownValues.Select(v => Encoding.UTF8.GetBytes(v)).ToArray();
                 }
             }
 
@@ -39,7 +37,7 @@ namespace LLRP.Helpers
                     }
                 }
 
-                return _utf8.GetString(value);
+                return Encoding.UTF8.GetString(value);
             }
         }
 
