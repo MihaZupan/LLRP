@@ -12,7 +12,8 @@ namespace LLRP
             UseProxy = false,
             AllowAutoRedirect = false,
             AutomaticDecompression = DecompressionMethods.None,
-            UseCookies = false
+            UseCookies = false,
+            ActivityHeadersPropagator = null,
         });
 
         private readonly ConnectionUriBuilder _uriBuilder;
