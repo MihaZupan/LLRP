@@ -14,6 +14,7 @@ namespace LLRP
             AutomaticDecompression = DecompressionMethods.None,
             UseCookies = false,
             ActivityHeadersPropagator = null,
+            PooledConnectionIdleTimeout = TimeSpan.FromDays(1), // Avoid the cleaning timer executing during the benchmark
         });
 
         private readonly ConnectionUriBuilder _uriBuilder;
