@@ -5,17 +5,67 @@ using System.Net.Http.Headers;
 
 namespace LLRP
 {
+    internal static class HttpClientConfiguration
+    {
+        public static bool ShareClients = false;
+        public static bool RoundRobin = false;
+        public static HttpMessageInvoker[] SharedClients = null!;
+        private static int _count;
+
+        public static HttpMessageInvoker CreateClient()
+        {
+            return new HttpMessageInvoker(new SocketsHttpHandler()
+            {
+                UseProxy = false,
+                AllowAutoRedirect = false,
+                AutomaticDecompression = DecompressionMethods.None,
+                UseCookies = false,
+                ActivityHeadersPropagator = null,
+                PooledConnectionIdleTimeout = TimeSpan.FromDays(1), // Avoid the cleaning timer executing during the benchmark
+            });
+        }
+
+        public static HttpMessageInvoker? GetFixedClient()
+        {
+            if (ShareClients)
+            {
+                if (RoundRobin)
+                {
+                    return null;
+                }
+                else
+                {
+                    return SharedClients[Interlocked.Increment(ref _count) % SharedClients.Length];
+                }
+            }
+            else
+            {
+                return CreateClient();
+            }
+        }
+    }
+
     internal sealed partial class HttpClientApplication : ApplicationBase<HttpClientApplication>
     {
-        private readonly HttpMessageInvoker _client = new(new SocketsHttpHandler()
+        private readonly HttpMessageInvoker? _client;
+        private int _requestCount = 0;
+
+        private HttpMessageInvoker GetClient()
         {
-            UseProxy = false,
-            AllowAutoRedirect = false,
-            AutomaticDecompression = DecompressionMethods.None,
-            UseCookies = false,
-            ActivityHeadersPropagator = null,
-            PooledConnectionIdleTimeout = TimeSpan.FromDays(1), // Avoid the cleaning timer executing during the benchmark
-        });
+            HttpMessageInvoker[] clients = HttpClientConfiguration.SharedClients;
+            int count = _requestCount;
+
+            if ((uint)count < (uint)clients.Length)
+            {
+                _requestCount++;
+                return clients[count];
+            }
+            else
+            {
+                _requestCount = 1;
+                return clients[0];
+            }
+        }
 
         private readonly ConnectionUriBuilder _uriBuilder;
         private readonly ConnectionHeaderValueCache _acceptHeaderCache;
@@ -25,6 +75,7 @@ namespace LLRP
 
         public HttpClientApplication() : base()
         {
+            _client = HttpClientConfiguration.GetFixedClient();
             _uriBuilder = new ConnectionUriBuilder(Downstream.Uri);
             _acceptHeaderCache = new();
             _userAgentHeaderCache = new();
@@ -32,11 +83,16 @@ namespace LLRP
 
         public override Task InitializeAsync() => Task.CompletedTask;
 
-        public override async Task ProcessRequestAsync()
+        private Task<HttpResponseMessage> SendAsync()
         {
             Debug.Assert(_request is not null);
+            HttpMessageInvoker client = _client ?? GetClient();
+            return client.SendAsync(_request, CancellationToken.None);
+        }
 
-            using HttpResponseMessage response = await _client.SendAsync(_request, CancellationToken.None);
+        public override async Task ProcessRequestAsync()
+        {
+            using HttpResponseMessage response = await SendAsync();
 
             WriteResponseLineAndHeaders(response, Writer);
 

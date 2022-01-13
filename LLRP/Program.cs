@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 using Microsoft.Extensions.Configuration;
 using PlatformBenchmarks;
 using System.Linq;
+using System.Net.Http;
 
 var config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
@@ -23,6 +24,8 @@ var hostBuilder = new WebHostBuilder()
 
         if (config.ShouldUseHttpClient())
         {
+            config.ConfigureSharedHttpClients();
+
             options.Listen(endPoint, builder =>
             {
                 builder.UseHttpApplication<HttpClientApplication>();
@@ -152,8 +155,29 @@ namespace PlatformBenchmarks
 
         public static bool ShouldUseHttpClient(this IConfiguration config)
         {
-            string? flag = config["httpclient"]?.ToLowerInvariant();
-            return flag == "true" || flag == "1";
+            return config.GetFlag("httpclient");
+        }
+
+        public static void ConfigureSharedHttpClients(this IConfiguration config)
+        {
+            if (HttpClientConfiguration.ShareClients = config.GetFlag("shareClients"))
+            {
+                HttpClientConfiguration.RoundRobin = config.GetFlag("shareClients.roundRobin");
+
+                int count = config["shareClients.count"] is string clientCount
+                    ? int.Parse(clientCount)
+                    : 1;
+
+                HttpClientConfiguration.SharedClients = Enumerable.Range(0, count)
+                    .Select(_ => HttpClientConfiguration.CreateClient())
+                    .ToArray();
+            }
+        }
+
+        private static bool GetFlag(this IConfiguration config, string flag)
+        {
+            string? value = config[flag]?.ToLowerInvariant();
+            return value == "true" || value == "1";
         }
     }
 
