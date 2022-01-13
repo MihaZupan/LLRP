@@ -313,7 +313,7 @@ namespace LLRP
             }
             else
             {
-                _requestHeaders.TryAddWithoutValidation(Encoding.ASCII.GetString(name), Encoding.UTF32.GetString(value));
+                _requestHeaders.TryAddWithoutValidation(Encoding.ASCII.GetString(name), Encoding.UTF8.GetString(value));
             }
         }
     }
