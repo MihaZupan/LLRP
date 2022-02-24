@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 using Microsoft.Extensions.Configuration;
 using PlatformBenchmarks;
 using System.Linq;
-using System.Net.Http;
 
 var config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
@@ -22,13 +21,27 @@ var hostBuilder = new WebHostBuilder()
         var endPoint = context.CreateIPEndPoint();
         DownstreamAddress.DownstreamAddresses = config.GetDownstreamAddresses();
 
+        config.ConfigureSharedHttpClients();
+
         if (config.ShouldUseHttpClient())
         {
-            config.ConfigureSharedHttpClients();
-
             options.Listen(endPoint, builder =>
             {
                 builder.UseHttpApplication<HttpClientApplication>();
+            });
+        }
+        else if (config.ShouldUseHttpClientWithAspNetContext())
+        {
+            options.Listen(endPoint, builder =>
+            {
+                builder.UseHttpApplication<HttpClientWithContextApplication>();
+            });
+        }
+        else if (config.ShouldUseYarp())
+        {
+            options.Listen(endPoint, builder =>
+            {
+                builder.UseHttpApplication<YarpApplication>();
             });
         }
         else
@@ -156,6 +169,16 @@ namespace PlatformBenchmarks
         public static bool ShouldUseHttpClient(this IConfiguration config)
         {
             return config.GetFlag("httpclient");
+        }
+
+        public static bool ShouldUseHttpClientWithAspNetContext(this IConfiguration config)
+        {
+            return config.GetFlag("httpclient-context");
+        }
+
+        public static bool ShouldUseYarp(this IConfiguration config)
+        {
+            return config.GetFlag("yarp");
         }
 
         public static void ConfigureSharedHttpClients(this IConfiguration config)

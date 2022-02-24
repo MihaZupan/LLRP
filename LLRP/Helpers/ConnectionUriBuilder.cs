@@ -1,4 +1,7 @@
-﻿namespace LLRP.Helpers
+﻿using Microsoft.AspNetCore.Http;
+using Yarp.ReverseProxy.Forwarder;
+
+namespace LLRP.Helpers
 {
     internal sealed class ConnectionUriBuilder
     {
@@ -63,6 +66,73 @@
             }
 
             _lastUri = new Uri(uriString, UriKind.Absolute);
+        }
+    }
+
+    internal sealed class ConnectionHttpContextUriBuilder
+    {
+        private readonly string _uriBase;
+
+        private char[] _lastPathAndQueryBuffer;
+        private int _lastPathLength;
+        private int _lastQueryLength;
+        private Uri _lastUri;
+
+        public ConnectionHttpContextUriBuilder(Uri baseUri)
+        {
+            _uriBase = baseUri.AbsoluteUri;
+
+            _lastPathAndQueryBuffer = Array.Empty<char>();
+            _lastPathLength = 0;
+            _lastQueryLength = 0;
+            _lastUri = baseUri;
+        }
+
+        public Uri CreateUri(PathString path, QueryString query)
+        {
+            ReadOnlySpan<char> lastPath = MemoryMarshal.CreateReadOnlySpan(
+                ref MemoryMarshal.GetArrayDataReference(_lastPathAndQueryBuffer),
+                _lastPathLength);
+
+            if (lastPath.SequenceEqual(path.Value))
+            {
+                if (!query.HasValue && _lastQueryLength == 0)
+                {
+                    return _lastUri;
+                }
+
+                ReadOnlySpan<char> lastQuery = MemoryMarshal.CreateReadOnlySpan(
+                    ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_lastPathAndQueryBuffer), _lastPathLength),
+                    _lastQueryLength);
+
+                if (lastQuery.SequenceEqual(query.Value))
+                {
+                    return _lastUri;
+                }
+            }
+
+            CreateNewUri(path, query);
+            return _lastUri;
+        }
+
+        private void CreateNewUri(PathString path, QueryString query)
+        {
+            string pathValue = path.Value ?? string.Empty;
+            string queryValue = query.Value ?? string.Empty;
+
+            _lastPathLength = pathValue.Length;
+            _lastQueryLength = queryValue.Length;
+
+            int minLength = pathValue.Length + queryValue.Length;
+            if (_lastPathAndQueryBuffer.Length < minLength)
+            {
+                _lastPathAndQueryBuffer = new char[Math.Max(_lastPathAndQueryBuffer.Length * 2, minLength)];
+            }
+
+            pathValue.CopyTo(_lastPathAndQueryBuffer);
+            queryValue.CopyTo(_lastPathAndQueryBuffer.AsSpan(pathValue.Length));
+
+            _lastUri = RequestUtilities.MakeDestinationAddress(_uriBase, path, query);
         }
     }
 }
