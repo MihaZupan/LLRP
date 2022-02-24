@@ -98,6 +98,26 @@ scenarios:
     load:
       job: bombardier
 
+  llrp-yarp:
+    downstream:
+      job: downstream
+    application:
+      job: llrp
+      variables:
+        yarp: 1
+    load:
+      job: bombardier
+
+  llrp-httpclientwithcontext:
+    downstream:
+      job: downstream
+    application:
+      job: llrp
+      variables:
+        httpclient-context: 1
+    load:
+      job: bombardier
+
   haproxy:
     downstream:
       job: downstream
