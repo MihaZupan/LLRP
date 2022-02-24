@@ -43,6 +43,14 @@ jobs:
     readyStateText: Application started.
     arguments: '--urls {{serverScheme}}://*:8080 --clusterUrls {{downstreamScheme}}://{{downstreamAddress}}:8081'
 
+  httpclientproxy:
+    source:
+      repository: https://github.com/aspnet/benchmarks.git
+      branchOrCommit: main
+      project: src/BenchmarksApps/HttpClient/Proxy/Proxy.csproj
+    readyStateText: Application started.
+    arguments: '--urls {{serverScheme}}://*:8080 --baseUri {{downstreamScheme}}://{{downstreamAddress}}:8081'
+
   haproxy:
     source:
       localFolder: C:/MihaZupan/LLRP/haproxy
@@ -71,6 +79,14 @@ scenarios:
       job: llrp
       variables:
         httpclient: 1
+    load:
+      job: bombardier
+
+  httpclientproxy:
+    downstream:
+      job: downstream
+    application:
+      job: httpclientproxy
     load:
       job: bombardier
 
