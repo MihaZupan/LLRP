@@ -156,75 +156,75 @@ namespace LLRP.Helpers
                     return TE; // TE
 
                 case 3:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 'a': return Age; // [A]ge
-                        case 'p': return P3P; // [P]3P
-                        case 't': return TSV; // [T]SV
-                        case 'v': return Via; // [V]ia
+                        case (byte)'A': return Age; // [A]ge
+                        case (byte)'P': return P3P; // [P]3P
+                        case (byte)'T': return TSV; // [T]SV
+                        case (byte)'V': return Via; // [V]ia
                     }
                     break;
 
                 case 4:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 'd': return Date; // [D]ate
-                        case 'e': return ETag; // [E]Tag
-                        case 'f': return From; // [F]rom
-                        case 'h': return Host; // [H]ost
-                        case 'l': return Link; // [L]ink
-                        case 'v': return Vary; // [V]ary
+                        case (byte)'D': return Date; // [D]ate
+                        case (byte)'E': return ETag; // [E]Tag
+                        case (byte)'F': return From; // [F]rom
+                        case (byte)'H': return Host; // [H]ost
+                        case (byte)'L': return Link; // [L]ink
+                        case (byte)'V': return Vary; // [V]ary
                     }
                     break;
 
                 case 5:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 'a': return Allow; // [A]llow
-                        case 'r': return Range; // [R]ange
+                        case (byte)'A': return Allow; // [A]llow
+                        case (byte)'R': return Range; // [R]ange
                     }
                     break;
 
                 case 6:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 'a': return Accept; // [A]ccept
-                        case 'c': return Cookie; // [C]ookie
-                        case 'e': return Expect; // [E]xpect
-                        case 'o': return Origin; // [O]rigin
-                        case 'p': return Pragma; // [P]ragma
-                        case 's': return Server; // [S]erver
+                        case (byte)'A': return Accept; // [A]ccept
+                        case (byte)'C': return Cookie; // [C]ookie
+                        case (byte)'E': return Expect; // [E]xpect
+                        case (byte)'O': return Origin; // [O]rigin
+                        case (byte)'P': return Pragma; // [P]ragma
+                        case (byte)'S': return Server; // [S]erver
                     }
                     break;
 
                 case 7:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case ':': return PseudoStatus; // [:]status
-                        case 'a': return AltSvc;  // [A]lt-Svc
-                        case 'c': return Cookie2; // [C]ookie2
-                        case 'e': return Expires; // [E]xpires
-                        case 'r':
-                            switch (KeyAt(ref key, 3) | 0x20)
+                        case (byte)':': return PseudoStatus; // [:]status
+                        case (byte)'A': return AltSvc;  // [A]lt-Svc
+                        case (byte)'C': return Cookie2; // [C]ookie2
+                        case (byte)'E': return Expires; // [E]xpires
+                        case (byte)'R':
+                            switch (KeyAt(ref key, 3))
                             {
-                                case 'e': return Referer; // [R]ef[e]rer
-                                case 'r': return Refresh; // [R]ef[r]esh
+                                case (byte)'e': return Referer; // [R]ef[e]rer
+                                case (byte)'r': return Refresh; // [R]ef[r]esh
                             }
                             break;
-                        case 't': return Trailer; // [T]railer
-                        case 'u': return Upgrade; // [U]pgrade
-                        case 'w': return Warning; // [W]arning
-                        case 'x': return XCache;  // [X]-Cache
+                        case (byte)'T': return Trailer; // [T]railer
+                        case (byte)'U': return Upgrade; // [U]pgrade
+                        case (byte)'W': return Warning; // [W]arning
+                        case (byte)'X': return XCache;  // [X]-Cache
                     }
                     break;
 
                 case 8:
-                    switch (KeyAt(ref key, 3) | 0x20)
+                    switch (KeyAt(ref key, 3))
                     {
-                        case '-': return AltUsed;  // Alt[-]Used
-                        case 'a': return Location; // Loc[a]tion
-                        case 'm': return IfMatch;  // If-[M]atch
-                        case 'r': return IfRange;  // If-[R]ange
+                        case (byte)'-': return AltUsed;  // Alt[-]Used
+                        case (byte)'a': return Location; // Loc[a]tion
+                        case (byte)'M': return IfMatch;  // If-[M]atch
+                        case (byte)'R': return IfRange;  // If-[R]ange
                     }
                     break;
 
@@ -232,119 +232,119 @@ namespace LLRP.Helpers
                     return ExpectCT; // Expect-CT
 
                 case 10:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 'c': return Connection; // [C]onnection
-                        case 'k': return KeepAlive;  // [K]eep-Alive
-                        case 's': return SetCookie;  // [S]et-Cookie
-                        case 'u': return UserAgent;  // [U]ser-Agent
+                        case (byte)'C': return Connection; // [C]onnection
+                        case (byte)'K': return KeepAlive;  // [K]eep-Alive
+                        case (byte)'S': return SetCookie;  // [S]et-Cookie
+                        case (byte)'U': return UserAgent;  // [U]ser-Agent
                     }
                     break;
 
                 case 11:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 'c': return ContentMD5; // [C]ontent-MD5
-                        case 'g': return GrpcStatus; // [g]rpc-status
-                        case 'r': return RetryAfter; // [R]etry-After
-                        case 's': return SetCookie2; // [S]et-Cookie2
+                        case (byte)'C': return ContentMD5; // [C]ontent-MD5
+                        case (byte)'g': return GrpcStatus; // [g]rpc-status
+                        case (byte)'R': return RetryAfter; // [R]etry-After
+                        case (byte)'S': return SetCookie2; // [S]et-Cookie2
                     }
                     break;
 
                 case 12:
-                    switch (KeyAt(ref key, 5) | 0x20)
+                    switch (KeyAt(ref key, 5))
                     {
-                        case 'd': return XMSEdgeRef;  // X-MSE[d]ge-Ref
-                        case 'e': return XPoweredBy;  // X-Pow[e]red-By
-                        case 'm': return GrpcMessage; // grpc-[m]essage
-                        case 'n': return ContentType; // Conte[n]t-Type
-                        case 'o': return MaxForwards; // Max-F[o]rwards
-                        case 't': return AcceptPatch; // Accep[t]-Patch
-                        case 'u': return XRequestID;  // X-Req[u]est-ID
+                        case (byte)'d': return XMSEdgeRef;  // X-MSE[d]ge-Ref
+                        case (byte)'e': return XPoweredBy;  // X-Pow[e]red-By
+                        case (byte)'m': return GrpcMessage; // grpc-[m]essage
+                        case (byte)'n': return ContentType; // Conte[n]t-Type
+                        case (byte)'o': return MaxForwards; // Max-F[o]rwards
+                        case (byte)'t': return AcceptPatch; // Accep[t]-Patch
+                        case (byte)'u': return XRequestID;  // X-Req[u]est-ID
                     }
                     break;
 
                 case 13:
-                    switch (KeyAt(ref key, 12) | 0x20)
+                    switch (KeyAt(ref key, 12))
                     {
-                        case 'd': return LastModified;  // Last-Modifie[d]
-                        case 'e': return ContentRange;  // Content-Rang[e]
-                        case 'g':
-                            switch (KeyAt(ref key, 0) | 0x20)
+                        case (byte)'L': return LastModified;  // Last-Modifie[d]
+                        case (byte)'C': return ContentRange;  // Content-Rang[e]
+                        case (byte)'g':
+                            switch (KeyAt(ref key, 0))
                             {
-                                case 's': return ServerTiming;  // [S]erver-Timin[g]
-                                case 'g': return GrpcEncoding;  // [g]rpc-encodin[g]
+                                case (byte)'S': return ServerTiming;  // [S]erver-Timin[g]
+                                case (byte)'g': return GrpcEncoding;  // [g]rpc-encodin[g]
                             }
                             break;
-                        case 'h': return IfNoneMatch;   // If-None-Matc[h]
-                        case 'l': return CacheControl;  // Cache-Contro[l]
-                        case 'n': return Authorization; // Authorizatio[n]
-                        case 's': return AcceptRanges;  // Accept-Range[s]
-                        case 't': return ProxySupport;  // Proxy-Suppor[t]
+                        case (byte)'h': return IfNoneMatch;   // If-None-Matc[h]
+                        case (byte)'l': return CacheControl;  // Cache-Contro[l]
+                        case (byte)'n': return Authorization; // Authorizatio[n]
+                        case (byte)'s': return AcceptRanges;  // Accept-Range[s]
+                        case (byte)'t': return ProxySupport;  // Proxy-Suppor[t]
                     }
                     break;
 
                 case 14:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 'a': return AcceptCharset; // [A]ccept-Charset
-                        case 'c': return ContentLength; // [C]ontent-Length
+                        case (byte)'A': return AcceptCharset; // [A]ccept-Charset
+                        case (byte)'C': return ContentLength; // [C]ontent-Length
                     }
                     break;
 
                 case 15:
-                    switch (KeyAt(ref key, 7) | 0x20)
+                    switch (KeyAt(ref key, 7))
                     {
-                        case '-': return XFrameOptions;  // X-Frame[-]Options
-                        case 'e': return AcceptEncoding; // Accept-[E]ncoding
-                        case 'k': return PublicKeyPins;  // Public-[K]ey-Pins
-                        case 'l': return AcceptLanguage; // Accept-[L]anguage
-                        case 'm': return XUACompatible;  // X-UA-Co[m]patible
-                        case 'r': return ReferrerPolicy; // Referre[r]-Policy
+                        case (byte)'-': return XFrameOptions;  // X-Frame[-]Options
+                        case (byte)'E': return AcceptEncoding; // Accept-[E]ncoding
+                        case (byte)'K': return PublicKeyPins;  // Public-[K]ey-Pins
+                        case (byte)'L': return AcceptLanguage; // Accept-[L]anguage
+                        case (byte)'m': return XUACompatible;  // X-UA-Co[m]patible
+                        case (byte)'r': return ReferrerPolicy; // Referre[r]-Policy
                     }
                     break;
 
                 case 16:
-                    switch (KeyAt(ref key, 11) | 0x20)
+                    switch (KeyAt(ref key, 11))
                     {
-                        case 'a': return ContentLocation; // Content-Loc[a]tion
-                        case 'c':
-                            switch (KeyAt(ref key, 0) | 0x20)
+                        case (byte)'a': return ContentLocation; // Content-Loc[a]tion
+                        case (byte)'c':
+                            switch (KeyAt(ref key, 0))
                             {
-                                case 'p': return ProxyConnection; // [P]roxy-Conne[c]tion
-                                case 'x': return XXssProtection;  // [X]-XSS-Prote[c]tion
+                                case (byte)'P': return ProxyConnection; // [P]roxy-Conne[c]tion
+                                case (byte)'X': return XXssProtection;  // [X]-XSS-Prote[c]tion
                             }
                             break;
-                        case 'g': return ContentLanguage; // Content-Lan[g]uage
-                        case 'i': return WWWAuthenticate; // WWW-Authent[i]cate
-                        case 'o': return ContentEncoding; // Content-Enc[o]ding
-                        case 'r': return XAspNetVersion;  // X-AspNet-Ve[r]sion
+                        case (byte)'g': return ContentLanguage; // Content-Lan[g]uage
+                        case (byte)'i': return WWWAuthenticate; // WWW-Authent[i]cate
+                        case (byte)'o': return ContentEncoding; // Content-Enc[o]ding
+                        case (byte)'r': return XAspNetVersion;  // X-AspNet-Ve[r]sion
                     }
                     break;
 
                 case 17:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 'i': return IfModifiedSince;  // [I]f-Modified-Since
-                        case 's': return SecWebSocketKey;  // [S]ec-WebSocket-Key
-                        case 't': return TransferEncoding; // [T]ransfer-Encoding
+                        case (byte)'I': return IfModifiedSince;  // [I]f-Modified-Since
+                        case (byte)'S': return SecWebSocketKey;  // [S]ec-WebSocket-Key
+                        case (byte)'T': return TransferEncoding; // [T]ransfer-Encoding
                     }
                     break;
 
                 case 18:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 'p': return ProxyAuthenticate; // [P]roxy-Authenticate
-                        case 'x': return XContentDuration;  // [X]-Content-Duration
+                        case (byte)'P': return ProxyAuthenticate; // [P]roxy-Authenticate
+                        case (byte)'X': return XContentDuration;  // [X]-Content-Duration
                     }
                     break;
 
                 case 19:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 'c': return ContentDisposition; // [C]ontent-Disposition
-                        case 'i': return IfUnmodifiedSince;  // [I]f-Unmodified-Since
-                        case 'p': return ProxyAuthorization; // [P]roxy-Authorization
+                        case (byte)'C': return ContentDisposition; // [C]ontent-Disposition
+                        case (byte)'I': return IfUnmodifiedSince;  // [I]f-Unmodified-Since
+                        case (byte)'P': return ProxyAuthorization; // [P]roxy-Authorization
                     }
                     break;
 
@@ -355,11 +355,11 @@ namespace LLRP.Helpers
                     return SecWebSocketVersion; // Sec-WebSocket-Version
 
                 case 22:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 'a': return AccessControlMaxAge;  // [A]ccess-Control-Max-Age
-                        case 's': return SecWebSocketProtocol; // [S]ec-WebSocket-Protocol
-                        case 'x': return XContentTypeOptions;  // [X]-Content-Type-Options
+                        case (byte)'A': return AccessControlMaxAge;  // [A]ccess-Control-Max-Age
+                        case (byte)'S': return SecWebSocketProtocol; // [S]ec-WebSocket-Protocol
+                        case (byte)'X': return XContentTypeOptions;  // [X]-Content-Type-Options
                     }
                     break;
 
@@ -370,10 +370,10 @@ namespace LLRP.Helpers
                     return SecWebSocketExtensions; // Sec-WebSocket-Extensions
 
                 case 25:
-                    switch (KeyAt(ref key, 0) | 0x20)
+                    switch (KeyAt(ref key, 0))
                     {
-                        case 's': return StrictTransportSecurity; // [S]trict-Transport-Security
-                        case 'u': return UpgradeInsecureRequests; // [U]pgrade-Insecure-Requests
+                        case (byte)'S': return StrictTransportSecurity; // [S]trict-Transport-Security
+                        case (byte)'U': return UpgradeInsecureRequests; // [U]pgrade-Insecure-Requests
                     }
                     break;
 
@@ -381,10 +381,10 @@ namespace LLRP.Helpers
                     return AccessControlAllowOrigin; // Access-Control-Allow-Origin
 
                 case 28:
-                    switch (KeyAt(ref key, 21) | 0x20)
+                    switch (KeyAt(ref key, 21))
                     {
-                        case 'h': return AccessControlAllowHeaders; // Access-Control-Allow-[H]eaders
-                        case 'm': return AccessControlAllowMethods; // Access-Control-Allow-[M]ethods
+                        case (byte)'H': return AccessControlAllowHeaders; // Access-Control-Allow-[H]eaders
+                        case (byte)'M': return AccessControlAllowMethods; // Access-Control-Allow-[M]ethods
                     }
                     break;
 
@@ -398,7 +398,7 @@ namespace LLRP.Helpers
             return null;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static char KeyAt(ref byte key, nint offset) => (char)Unsafe.AddByteOffset(ref key, offset);
+            static byte KeyAt(ref byte key, nint offset) => Unsafe.AddByteOffset(ref key, offset);
         }
     }
 }
