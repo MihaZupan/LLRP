@@ -7,6 +7,8 @@ using Microsoft.Extensions.Configuration;
 using PlatformBenchmarks;
 using System.Linq;
 
+Console.WriteLine($"Args: {string.Join(' ', args)}");
+
 var config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
     .AddEnvironmentVariables()
@@ -84,6 +86,7 @@ namespace PlatformBenchmarks
     {
         public static IConnectionBuilder UseHttpApplication<TConnection>(this IConnectionBuilder builder) where TConnection : IHttpConnection, new()
         {
+            Console.WriteLine($"Using {typeof(TConnection).Name}");
             return builder.Use(next => new HttpApplication<TConnection>().ExecuteAsync);
         }
     }
@@ -173,7 +176,7 @@ namespace PlatformBenchmarks
 
         public static bool ShouldUseHttpClientWithAspNetContext(this IConfiguration config)
         {
-            return config.GetFlag("httpclient-context");
+            return config.GetFlag("httpclient-httpcontext");
         }
 
         public static bool ShouldUseYarp(this IConfiguration config)
