@@ -33,7 +33,7 @@ jobs:
       localFolder: C:/MihaZupan/LLRP
       project: LLRP/LLRP.csproj
     readyStateText: Application started.
-    arguments: '--urls {{serverScheme}}://*:8080 --downstream {{downstreamScheme}}://{{downstreamAddress}}:8081 --httpclient {{httpclient}}'
+    arguments: '--urls {{serverScheme}}://*:8080 --downstream {{downstreamScheme}}://{{downstreamAddress}}:8081 --httpclient {{httpclient}} --httpclient-context {{httpclient-context}} --yarp {{yarp}}'
 
   yarp:
     source:
@@ -53,14 +53,31 @@ jobs:
 
   haproxy:
     source:
-      localFolder: C:/MihaZupan/LLRP/haproxy
+      Repository: https://github.com/aspnet/benchmarks.git
       BranchOrCommit: main
-      DockerFile: haproxy.dockerfile
+      DockerFile: docker/haproxy/haproxy.dockerfile
       DockerImageName: haproxy-reverseproxy
-      DockerContextDirectory: haproxy
+      DockerContextDirectory: docker/haproxy
     environmentVariables:
         DOWNSTREAM_ADDRESS: '{{downstreamAddress}}'
         DOWNSTREAM_PORT: '8081'
+    port: 8080
+
+  nginx:
+    source:
+      Repository: https://github.com/aspnet/benchmarks.git
+      BranchOrCommit: main
+      DockerFile: docker/nginx/nginx.dockerfile
+      DockerImageName: nginx-reverseproxy
+      DockerContextDirectory: docker/nginx
+    environmentVariables:
+        DOWNSTREAM_SCHEME: '{{downstreamScheme}}'
+        DOWNSTREAM_ADDRESS: '{{downstreamAddress}}'
+        DOWNSTREAM_PORT: '8081'
+        WORKER_PROCESSES: '{{cores}}'
+    buildArguments:
+      - SERVER_SCHEME={{serverScheme}}
+      - SERVER_PROTOCOL={{serverProtocol}}
     port: 8080
 
 scenarios:
@@ -123,6 +140,14 @@ scenarios:
       job: downstream
     application:
       job: haproxy
+    load:
+      job: bombardier
+
+  nginx:
+    downstream:
+      job: downstream
+    application:
+      job: nginx
     load:
       job: bombardier
 
