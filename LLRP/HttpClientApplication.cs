@@ -8,25 +8,7 @@ namespace LLRP
     internal sealed partial class HttpClientApplication : ApplicationBase<HttpClientApplication>
     {
         private readonly HttpMessageInvoker? _client;
-        private int _requestCount = 0;
-
-        private HttpMessageInvoker GetClient()
-        {
-            HttpMessageInvoker[] clients = HttpClientConfiguration.SharedClients;
-            int count = _requestCount;
-
-            if ((uint)count < (uint)clients.Length)
-            {
-                _requestCount++;
-                return clients[count];
-            }
-            else
-            {
-                _requestCount = 1;
-                return clients[0];
-            }
-        }
-
+        private int _clientCounter = 0;
         private readonly ConnectionUriBuilder _uriBuilder;
         private readonly ConnectionHeaderValueCache _acceptHeaderCache;
         private readonly ConnectionHeaderValueCache _userAgentHeaderCache;
@@ -46,7 +28,7 @@ namespace LLRP
         private Task<HttpResponseMessage> SendAsync()
         {
             Debug.Assert(_request is not null);
-            HttpMessageInvoker client = _client ?? GetClient();
+            HttpMessageInvoker client = _client ?? HttpClientConfiguration.GetDynamicClient(ref _clientCounter);
             return client.SendAsync(_request, CancellationToken.None);
         }
 

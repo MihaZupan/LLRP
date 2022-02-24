@@ -142,7 +142,8 @@ namespace LLRP
         private PathString _path;
         private QueryString _query;
         private readonly string _destinationPrefix;
-        private readonly HttpMessageInvoker _invoker;
+        private readonly HttpMessageInvoker? _client;
+        private int _clientCounter = 0;
         private readonly ForwarderRequestConfig _requestConfig;
         private readonly HttpTransformer _transformer;
         private HttpContextResponseStream? _bodyWriterStream;
@@ -152,7 +153,7 @@ namespace LLRP
             _acceptHeaderCache = new();
             _userAgentHeaderCache = new();
             _destinationPrefix = Downstream.Uri.AbsoluteUri;
-            _invoker = HttpClientConfiguration.CreateClient();
+            _client = HttpClientConfiguration.GetFixedClient();
             _requestConfig = new();
             _transformer = HttpTransformer.Default;
         }
@@ -161,7 +162,8 @@ namespace LLRP
 
         public override Task ProcessRequestAsync()
         {
-            return ForwarderSetup.Forwarder.SendAsync(_context, _destinationPrefix, _invoker, _requestConfig, _transformer).AsTask();
+            var client = _client ?? HttpClientConfiguration.GetDynamicClient(ref _clientCounter);
+            return ForwarderSetup.Forwarder.SendAsync(_context, _destinationPrefix, client, _requestConfig, _transformer).AsTask();
         }
 
         public override void OnStartLine(HttpVersionAndMethod versionAndMethod, TargetOffsetPathLength targetPath, Span<byte> startLine)

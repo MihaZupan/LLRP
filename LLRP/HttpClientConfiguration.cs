@@ -40,5 +40,22 @@ namespace LLRP
                 return CreateClient();
             }
         }
+
+        public static HttpMessageInvoker GetDynamicClient(ref int countRef)
+        {
+            HttpMessageInvoker[] clients = SharedClients;
+            int count = countRef;
+
+            if ((uint)count < (uint)clients.Length)
+            {
+                countRef = count + 1;
+                return clients[count];
+            }
+            else
+            {
+                countRef = 1;
+                return clients[0];
+            }
+        }
     }
 }

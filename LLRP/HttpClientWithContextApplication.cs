@@ -122,7 +122,8 @@ namespace LLRP
         private int _pathAndQueryLength;
         private PathString _path;
         private QueryString _query;
-        private readonly HttpMessageInvoker _invoker;
+        private readonly HttpMessageInvoker? _client;
+        private int _clientCounter = 0;
         private HttpContextResponseStream? _bodyWriterStream;
 
         public HttpClientWithContextApplication() : base()
@@ -130,7 +131,7 @@ namespace LLRP
             _uriBuilder = new(Downstream.Uri);
             _acceptHeaderCache = new();
             _userAgentHeaderCache = new();
-            _invoker = HttpClientConfiguration.CreateClient();
+            _client = HttpClientConfiguration.GetFixedClient();
         }
 
         public override Task InitializeAsync() => Task.CompletedTask;
@@ -145,7 +146,8 @@ namespace LLRP
                 proxyRequestHeaders.TryAddWithoutValidation(header.Key, header.Value.ToString());
             }
 
-            using var proxyResponse = await _invoker.SendAsync(proxyRequest, CancellationToken.None);
+            var client = _client ?? HttpClientConfiguration.GetDynamicClient(ref _clientCounter);
+            using var proxyResponse = await client.SendAsync(proxyRequest, CancellationToken.None);
 
             _context.Response.StatusCode = (int)proxyResponse.StatusCode;
 
