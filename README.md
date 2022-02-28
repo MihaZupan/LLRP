@@ -33,14 +33,14 @@ To run the benchmarks with full PGO, append the following to the above commands:
 ## Scenarios
 
 The following scenarios are available as part of this repository's benchmark definition:
-- `llrp-llhttp`: A low-level reverse proxy implementation based on Kestrel platform benchmarks, using [LLHTTP](https://github.com/dotnet/runtimelab/tree/feature/LLHTTP2) as the client for outgoing requests. See [LLRPApplication.cs](LLRPApplication.cs) for the implementation.
-- `llrp-httpclient`: A low-level reverse proxy implementation based on Kestrel platform benchmarks, using `HttpClient` as the client for outgoing requests. See [HttpClientApplication.cs](HttpClientApplication.cs) for the implementation.
+- `llrp-llhttp`: A low-level reverse proxy implementation based on Kestrel platform benchmarks, using [LLHTTP](https://github.com/dotnet/runtimelab/tree/feature/LLHTTP2) as the client for outgoing requests. See [LLRPApplication.cs](LLRP/LLRPApplication.cs) for the implementation.
+- `llrp-httpclient`: A low-level reverse proxy implementation based on Kestrel platform benchmarks, using `HttpClient` as the client for outgoing requests. See [HttpClientApplication.cs](LLRP/HttpClientApplication.cs) for the implementation.
 - `yarp`: A fully-featured [microsoft/reverse-proxy benchmark app](https://github.com/microsoft/reverse-proxy/tree/main/testassets/BenchmarkApp). Utilizes ASP.NET Core request parsing, routing, connection management and middleware. Uses [`HttpForwarder`](https://github.com/microsoft/reverse-proxy/blob/main/src/ReverseProxy/Forwarder/HttpForwarder.cs) for the proxying, relying on `HttpClient` for outgoing requests.
 - `HttpClientProxy`: A reverse proxy using full ASP.NET Core and `HttpClient`. See the implementation [here](https://github.com/aspnet/Benchmarks/tree/main/src/BenchmarksApps/HttpClient/Proxy).
     - Differs from `yarp` in removing most of the functionality on top of raw `HttpClient.SendAsync` calls.
-- `llrp-yarp`: A reverse proxy implementation based on Kestrel platform benchmarks that creates custom `HttpContext` and then calls into YARP's `HttpForwarder`. See [YarpApplication.cs](YarpApplication.cs) for the implementation.
+- `llrp-yarp`: A reverse proxy implementation based on Kestrel platform benchmarks that creates custom `HttpContext` and then calls into YARP's `HttpForwarder`. See [YarpApplication.cs](LLRP/YarpApplication.cs) for the implementation.
     - Differs from `yarp` in removing most of ASP.NET Core functionality.
-- `llrp-httpclientwithcontext`: Similar to `llrp-yarp` in that it creates a custom `HttpContext` object, but then relies on `HttpClient` for outgoing requests. See [HttpClientWithContextApplication.cs](HttpClientWithContextApplication.cs) for the implementation.
+- `llrp-httpclientwithcontext`: Similar to `llrp-yarp` in that it creates a custom `HttpContext` object, but then relies on `HttpClient` for outgoing requests. See [HttpClientWithContextApplication.cs](LLRP/HttpClientWithContextApplication.cs) for the implementation.
     - Differs from `llrp-yarp` in removing most of YARP's functionality on top of raw `HttpClient.SendAsync` calls.
     - Differs from `llrp-llhttp` in introducing the indirection through `HttpContext`, which is part of the cost of using full ASP.NET Core functionality.
 - `haproxy`: An [HAProxy](http://www.haproxy.org/) benchmark used as a performance reference.
