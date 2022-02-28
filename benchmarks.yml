@@ -84,7 +84,7 @@ jobs:
     port: 8080
 
 scenarios:
-  llrp:
+  llrp-llhttp:
     downstream:
       job: downstream
     application:
@@ -92,7 +92,7 @@ scenarios:
     load:
       job: bombardier
 
-  httpclient:
+  llrp-httpclient:
     downstream:
       job: downstream
     application:
