@@ -33,7 +33,8 @@ jobs:
 
   llrp:
     source:
-      localFolder: C:/MihaZupan/LLRP
+      repository: https://github.com/MihaZupan/LLRP.git
+      branchOrCommit: main
       project: LLRP/LLRP.csproj
     readyStateText: Application started.
     arguments: '--urls {{serverScheme}}://*:8080 --downstream {{downstreamScheme}}://{{downstreamAddress}}:8081 --httpclient {{httpclient}} --httpclient-httpcontext {{httpclient-httpcontext}} --yarp {{yarp}}'
