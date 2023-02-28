@@ -1,4 +1,4 @@
-﻿imports:
+imports:
   - https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Bombardier/bombardier.yml
 
 variables:
@@ -27,9 +27,10 @@ jobs:
     source:
       repository: https://github.com/aspnet/benchmarks.git
       branchOrCommit: main
-      project: src/BenchmarksApps/Kestrel/PlatformBenchmarks/PlatformBenchmarks.csproj
+      project: src/BenchmarksApps/TechEmpower/PlatformBenchmarks/PlatformBenchmarks.csproj
     readyStateText: Application started.
     arguments: '--urls {{downstreamScheme}}://*:8081 --Kestrel:EndpointDefaults:Protocols http1'
+    framework: net7.0
 
   llrp:
     source:
