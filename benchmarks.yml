@@ -1,8 +1,8 @@
 imports:
+  - https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Wrk/wrk.yml
   - https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Bombardier/bombardier.yml
 
 variables:
-    path: /plaintext
     presetHeaders: plaintext
     serverScheme: http
     downstreamScheme: http
@@ -20,14 +20,13 @@ jobs:
   bombardier:
     variables:
       transport: '{% if serverProtocol == "http2" %}http2{% else %}fasthttp{% endif %}'
-      path: /plaintext
       serverPort: 8080
 
   downstream:
     source:
       repository: https://github.com/aspnet/benchmarks.git
       branchOrCommit: main
-      project: src/BenchmarksApps/TechEmpower/PlatformBenchmarks/PlatformBenchmarks.csproj
+      project: src/Downstream/Downstream.csproj
     readyStateText: Application started.
     arguments: '--urls {{downstreamScheme}}://*:8081 --Kestrel:EndpointDefaults:Protocols http1'
     framework: net7.0

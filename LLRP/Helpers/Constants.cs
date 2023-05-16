@@ -21,7 +21,7 @@
         };
         public static ReadOnlySpan<byte> ChunkedEncodingFinalChunk => new byte[]
         {
-            (byte)'0', (byte)'\r', (byte)'n', (byte)'\r', (byte)'\n'
+            (byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n'
         };
         public static ReadOnlySpan<byte> EncodedTransferEncodingName => new byte[]
         {

@@ -6,6 +6,8 @@ namespace LLRP
 {
     internal abstract class ApplicationBase<TApplication> : IHttpConnection
     {
+        private static int s_exceptionCounter;
+
         private const int CRLF = 2;
         private const int ChunkedEncodingMaxChunkLengthDigits = 4; // Valid as long as ResponseContentBufferLength <= 65536
         private const int ChunkedEncodingFinalChunkLength = 1 + CRLF + CRLF;
@@ -55,6 +57,11 @@ namespace LLRP
             catch (Exception ex)
             {
                 Reader.Complete(ex);
+
+                if (Interlocked.Increment(ref s_exceptionCounter) <= 10)
+                {
+                    Console.WriteLine(ex);
+                }
             }
             finally
             {

@@ -160,12 +160,13 @@ namespace LLRP
                 {
                     int read = await readTask;
 
-                    WriteChunk(app, app.ResponseContentBuffer.AsSpan(0, read));
-
                     if (read == 0)
                     {
+                        app.WriteToWriter(Constants.ChunkedEncodingFinalChunk);
                         return;
                     }
+
+                    WriteChunk(app, app.ResponseContentBuffer.AsSpan(0, read));
 
                     await app.Writer.FlushAsync();
 
@@ -174,16 +175,9 @@ namespace LLRP
 
                 static void WriteChunk(LLRPApplication app, ReadOnlySpan<byte> chunk)
                 {
-                    if (chunk.Length == 0)
-                    {
-                        app.WriteToWriter(Constants.ChunkedEncodingFinalChunk);
-                    }
-                    else
-                    {
-                        var writer = GetWriter(app.Writer, sizeHint: chunk.Length + ChunkedEncodingMaxChunkOverhead);
-                        writer.WriteChunkedEncodingChunkNoLengthCheck(chunk);
-                        writer.Commit();
-                    }
+                    var writer = GetWriter(app.Writer, sizeHint: chunk.Length + ChunkedEncodingMaxChunkOverhead);
+                    writer.WriteChunkedEncodingChunkNoLengthCheck(chunk);
+                    writer.Commit();
                 }
             }
         }
@@ -278,12 +272,13 @@ namespace LLRP
                 pathAndQuery = GetPathAndQueryWithPrefix(pathAndQuery);
             }
 
+            _request.ConfigureRequest(hasContentLength: true, hasTrailingHeaders: false);
+
             _request.WriteRequestStart(
                 startLine.Slice(0, versionAndMethod.MethodEnd),
                 _authority.AsSpan(),
                 pathAndQuery);
 
-            _request.ConfigureRequest(hasContentLength: true, hasTrailingHeaders: false);
             _isChunkedResponse = false;
         }
 
@@ -328,6 +323,8 @@ namespace LLRP
                     }
                 }
             }
+
+            //Console.WriteLine($"Request header: {Encoding.ASCII.GetString(name)}={Encoding.ASCII.GetString(value)}");
 
             _request.WriteHeader(name, value);
         }

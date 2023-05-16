@@ -15,6 +15,7 @@ namespace System
     /// This is a mutable buffer. Copying and disposing twice will corrupt array pool.
     /// </remarks>
     [StructLayout(LayoutKind.Auto)]
+    [DebuggerDisplay("{System.Text.Encoding.UTF8.GetString(ActiveSpan)}")]
     internal struct ArrayBuffer : IDisposable
     {
         private byte[] _bytes;
