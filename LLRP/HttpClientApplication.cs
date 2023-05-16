@@ -21,6 +21,9 @@ namespace LLRP
             _uriBuilder = new ConnectionUriBuilder(Downstream.Uri);
             _acceptHeaderCache = new();
             _userAgentHeaderCache = new();
+
+            _request = new HttpRequestMessage();
+            _requestHeaders = _request.Headers;
         }
 
         public override Task InitializeAsync() => Task.CompletedTask;
@@ -46,6 +49,12 @@ namespace LLRP
             else
             {
                 await CopyRawResponseContent(responseStream);
+            }
+
+            if (HttpClientConfiguration.ReuseHttpRequestMessage)
+            {
+                _request!.RequestUri = null;
+                _requestHeaders!.Clear();
             }
         }
 
@@ -97,12 +106,13 @@ namespace LLRP
                 {
                     int read = await readTask;
 
-                    WriteChunk(app, app.ResponseContentBuffer.AsSpan(0, read));
-
                     if (read == 0)
                     {
+                        app.WriteToWriter(Constants.ChunkedEncodingFinalChunk);
                         return;
                     }
+
+                    WriteChunk(app, app.ResponseContentBuffer.AsSpan(0, read));
 
                     await app.Writer.FlushAsync();
 
@@ -111,16 +121,9 @@ namespace LLRP
 
                 static void WriteChunk(HttpClientApplication app, ReadOnlySpan<byte> chunk)
                 {
-                    if (chunk.Length == 0)
-                    {
-                        app.WriteToWriter(Constants.ChunkedEncodingFinalChunk);
-                    }
-                    else
-                    {
-                        var writer = GetWriter(app.Writer, sizeHint: chunk.Length + ChunkedEncodingMaxChunkOverhead);
-                        writer.WriteChunkedEncodingChunkNoLengthCheck(chunk);
-                        writer.Commit();
-                    }
+                    var writer = GetWriter(app.Writer, sizeHint: chunk.Length + ChunkedEncodingMaxChunkOverhead);
+                    writer.WriteChunkedEncodingChunkNoLengthCheck(chunk);
+                    writer.Commit();
                 }
             }
         }
@@ -230,8 +233,16 @@ namespace LLRP
 
             Uri uri = _uriBuilder.CreateUri(startLine.Slice(targetPath.Offset));
 
-            _request = new HttpRequestMessage(method, uri);
-            _requestHeaders = _request.Headers;
+            if (HttpClientConfiguration.ReuseHttpRequestMessage)
+            {
+                _request!.Method = method;
+                _request!.RequestUri = uri;
+            }
+            else
+            {
+                _request = new HttpRequestMessage(method, uri);
+                _requestHeaders = _request.Headers;
+            }
         }
 
         public override void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
@@ -249,13 +260,27 @@ namespace LLRP
                 string valueString = header.TryGetValue(value) ?? (
                     ReferenceEquals(header, KnownHeaders.Accept) ? _acceptHeaderCache.GetHeaderValue(value) :
                     ReferenceEquals(header, KnownHeaders.UserAgent) ? _userAgentHeaderCache.GetHeaderValue(value) :
-                    Encoding.UTF8.GetString(value));
+                    AllocateHeaderValue(value));
 
                 _requestHeaders.TryAddWithoutValidation(header.Name, valueString);
             }
             else
             {
-                _requestHeaders.TryAddWithoutValidation(Encoding.ASCII.GetString(name), Encoding.UTF8.GetString(value));
+                _requestHeaders.TryAddWithoutValidation(AllocateHeaderName(name), AllocateHeaderValue(value));
+            }
+
+            static string AllocateHeaderName(ReadOnlySpan<byte> name)
+            {
+                string s = Encoding.UTF8.GetString(name);
+                Console.WriteLine($"Allocated header name {s}");
+                return s;
+            }
+
+            static string AllocateHeaderValue(ReadOnlySpan<byte> value)
+            {
+                string s = Encoding.UTF8.GetString(value);
+                Console.WriteLine($"Allocated header value {s}");
+                return s;
             }
         }
     }

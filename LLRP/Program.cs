@@ -196,6 +196,12 @@ namespace PlatformBenchmarks
                     .Select(_ => HttpClientConfiguration.CreateClient())
                     .ToArray();
             }
+
+            Console.WriteLine($"HttpClient settings:" +
+                $" ShareClients={HttpClientConfiguration.ShareClients}" +
+                $" RoundRobin={HttpClientConfiguration.RoundRobin}" +
+                $" SharedClients={HttpClientConfiguration.SharedClients?.Length ?? 0}" +
+                $" ReuseHttpRequestMessage={HttpClientConfiguration.ReuseHttpRequestMessage}");
         }
 
         private static bool GetFlag(this IConfiguration config, string flag)

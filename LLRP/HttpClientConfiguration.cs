@@ -1,9 +1,14 @@
-﻿using System.Net.Http;
+﻿using LLRP.Helpers;
+using System.Net.Http;
 
 namespace LLRP
 {
     internal static class HttpClientConfiguration
     {
+        public static readonly bool ReuseHttpRequestMessage = RuntimeSettingParser.QuerEnvironmentVariableSwitch(
+            "LLRP_HTTPCLIENT_REUSEREQUEST",
+            true);
+
         public static bool ShareClients = false;
         public static bool RoundRobin = false;
         public static HttpMessageInvoker[] SharedClients = null!;
