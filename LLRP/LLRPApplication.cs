@@ -249,7 +249,7 @@ namespace LLRP
                 HttpStatusCode statusCode = app._request.StatusCode;
                 var writer = GetWriter(app.Writer, sizeHint: 64);
                 writer.UnsafeWriteNoLengthCheck(Constants.Http11Space);
-                writer.WriteNumeric((uint)statusCode);
+                writer.WriteStatusCode((uint)statusCode);
                 writer.Write((byte)' ');
                 writer.WriteAsciiString(ReasonPhrases.GetReasonPhrase((int)statusCode));
                 writer.WriteCRLF();

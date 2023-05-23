@@ -19,7 +19,7 @@
              where T : struct, IBufferWriter<byte>
         {
             buffer.Ensure(text.Length);
-            int byteCount = Encoding.UTF8.GetBytes(text.AsSpan(), buffer.Span);
+            int byteCount = Encoding.ASCII.GetBytes(text.AsSpan(), buffer.Span);
             Debug.Assert(byteCount == text.Length);
             buffer.Advance(byteCount);
         }

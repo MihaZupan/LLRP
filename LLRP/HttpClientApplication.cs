@@ -12,8 +12,7 @@ namespace LLRP
         private readonly ConnectionUriBuilder _uriBuilder;
         private readonly ConnectionHeaderValueCache _acceptHeaderCache;
         private readonly ConnectionHeaderValueCache _userAgentHeaderCache;
-        private HttpRequestMessage? _request;
-        private HttpHeaders? _requestHeaders;
+        private HttpRequestMessage _request;
 
         public HttpClientApplication() : base()
         {
@@ -21,9 +20,7 @@ namespace LLRP
             _uriBuilder = new ConnectionUriBuilder(Downstream.Uri);
             _acceptHeaderCache = new();
             _userAgentHeaderCache = new();
-
             _request = new HttpRequestMessage();
-            _requestHeaders = _request.Headers;
         }
 
         public override Task InitializeAsync() => Task.CompletedTask;
@@ -53,8 +50,8 @@ namespace LLRP
 
             if (HttpClientConfiguration.ReuseHttpRequestMessage)
             {
-                _request!.RequestUri = null;
-                _requestHeaders!.Clear();
+                _request.RequestUri = null;
+                _request.Headers.Clear();
             }
         }
 
@@ -218,7 +215,7 @@ namespace LLRP
             static void WriteStatusLineSlow(ref BufferWriter<WriterAdapter> writer, HttpResponseMessage response)
             {
                 writer.Write(Constants.Http11Space);
-                writer.WriteNumeric((uint)response.StatusCode);
+                writer.WriteStatusCode((uint)response.StatusCode);
                 writer.Write(Constants.Space);
                 writer.WriteUtf8String(response.ReasonPhrase ?? "Unknown");
                 writer.WriteCRLF();
@@ -235,20 +232,17 @@ namespace LLRP
 
             if (HttpClientConfiguration.ReuseHttpRequestMessage)
             {
-                _request!.Method = method;
-                _request!.RequestUri = uri;
+                _request.Method = method;
+                _request.RequestUri = uri;
             }
             else
             {
                 _request = new HttpRequestMessage(method, uri);
-                _requestHeaders = _request.Headers;
             }
         }
 
         public override void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
         {
-            Debug.Assert(_requestHeaders is not null);
-
             KnownHeaders.KnownHeader? header = KnownHeaders.TryGetKnownHeader(name);
             if (header is not null)
             {
@@ -262,11 +256,11 @@ namespace LLRP
                     ReferenceEquals(header, KnownHeaders.UserAgent) ? _userAgentHeaderCache.GetHeaderValue(value) :
                     AllocateHeaderValue(value));
 
-                _requestHeaders.TryAddWithoutValidation(header.Name, valueString);
+                _request.Headers.TryAddWithoutValidation(header.Name, valueString);
             }
             else
             {
-                _requestHeaders.TryAddWithoutValidation(AllocateHeaderName(name), AllocateHeaderValue(value));
+                _request.Headers.TryAddWithoutValidation(AllocateHeaderName(name), AllocateHeaderValue(value));
             }
 
             static string AllocateHeaderName(ReadOnlySpan<byte> name)
